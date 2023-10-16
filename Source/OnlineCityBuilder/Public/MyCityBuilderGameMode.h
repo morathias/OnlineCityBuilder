@@ -13,5 +13,8 @@ UCLASS()
 class ONLINECITYBUILDER_API AMyCityBuilderGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
+public:
+	AMyCityBuilderGameMode();
+	~AMyCityBuilderGameMode();
 };
