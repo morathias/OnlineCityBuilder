@@ -8,7 +8,9 @@
 #include "GameFramework/Pawn.h"
 #include "MyCamera.generated.h"
 
+class UInputMappingContext;
 class UInputAction;
+class AStreetBuilder;
 
 UCLASS()
 class ONLINECITYBUILDER_API AMyCamera : public APawn
@@ -31,26 +33,43 @@ protected:
 
 private:	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
-	class UInputMappingContext* inputMapping;
+	UInputMappingContext* inputMapping;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
 	UInputAction* moveInputAction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
 	UInputAction* zoomInputAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* placeObjectInputAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* cancelPlacementInputAction;
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Movement")
 	float speed = 10;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Movement")
 	float zoomSpeed = 10;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Movement")
 	float smoothing = 5;
+
+	UPROPERTY(EditAnywhere, Category = "Road Editing")
+	float rayLength = 10000;
+
+	UPROPERTY(EditAnywhere, Category = "Road Editing")
+	UMaterialInterface* roadMaterial;
 
 	FVector movementDir;
 	FVector targetPos;
 
+	AStreetBuilder* streetBuilder;
+
 	void Move(const FInputActionValue& value);
 	void Zoom(const FInputActionValue& value);
+
+	void PlaceObject(const FInputActionValue& value);
+	void CancelPlacement(const FInputActionValue& value);
 };

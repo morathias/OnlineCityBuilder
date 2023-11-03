@@ -3,25 +3,32 @@
 
 #include "MyCamera.h"
 
+#include "StreetBuilder.h"
+
 #include <InputMappingContext.h>
 #include <InputAction.h>
 #include <EnhancedInputSubsystems.h>
 #include <EnhancedInputComponent.h>
+#include "MyCityBuilderGameMode.h"
 
 // Sets default values
 AMyCamera::AMyCamera()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-    movementDir = FVector::ZeroVector;
-    targetPos = GetActorLocation();
 }
 
 // Called when the game starts or when spawned
 void AMyCamera::BeginPlay()
 {
 	Super::BeginPlay();
+
+    movementDir = FVector::ZeroVector;
+    targetPos = GetActorLocation();
+
+    streetBuilder = GetWorld()->SpawnActor<AStreetBuilder>(AStreetBuilder::StaticClass());
+    streetBuilder->SetOwner(this);
+    streetBuilder->SetMaterial(roadMaterial);
 }
 
 // Called every frame
@@ -58,6 +65,37 @@ void AMyCamera::Zoom(const FInputActionValue& value)
     targetPos += zoom;
 }
 
+void AMyCamera::PlaceObject(const FInputActionValue& value)
+{
+    if (!value.Get<bool>()) return;
+
+    AMyCityBuilderGameMode* gameMode = Cast<AMyCityBuilderGameMode>(GetWorld()->GetAuthGameMode());
+    if (gameMode == nullptr || !gameMode->isEditingRoad) return;
+
+    if (APlayerController* PC = Cast<APlayerController>(GetController()))
+    {
+        FVector mousePos;
+        FVector mouseDir;
+        PC->DeprojectMousePositionToWorld(mousePos, mouseDir);
+        FHitResult hitResult;
+
+        if (GetWorld()->LineTraceSingleByChannel(hitResult, mousePos, mousePos + mouseDir * rayLength, ECollisionChannel::ECC_Visibility))
+        {
+            streetBuilder->PlaceRoad(hitResult.ImpactPoint);
+        }
+    }
+}
+
+void AMyCamera::CancelPlacement(const FInputActionValue& value) 
+{
+    if (!value.Get<bool>()) return;
+
+    AMyCityBuilderGameMode* gameMode = Cast<AMyCityBuilderGameMode>(GetWorld()->GetAuthGameMode());
+    if (gameMode == nullptr || !gameMode->isEditingRoad) return;
+
+    streetBuilder->CancelRoad();
+}
+
 // Called to bind functionality to input
 void AMyCamera::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -84,6 +122,16 @@ void AMyCamera::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
         {
             playerEnhancedInputComponent->BindAction(zoomInputAction, ETriggerEvent::Triggered, this, &AMyCamera::Zoom);
             playerEnhancedInputComponent->BindAction(zoomInputAction, ETriggerEvent::Completed, this, &AMyCamera::Zoom);
+        }
+
+        if (placeObjectInputAction)
+        {
+            playerEnhancedInputComponent->BindAction(placeObjectInputAction, ETriggerEvent::Started, this, &AMyCamera::PlaceObject);
+        }
+
+        if (cancelPlacementInputAction)
+        {
+            playerEnhancedInputComponent->BindAction(cancelPlacementInputAction, ETriggerEvent::Started, this, &AMyCamera::CancelPlacement);
         }
     }
 }

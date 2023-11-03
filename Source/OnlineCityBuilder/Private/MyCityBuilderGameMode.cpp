@@ -14,3 +14,8 @@ AMyCityBuilderGameMode::AMyCityBuilderGameMode()
     DefaultPawnClass = AMyCamera::StaticClass();
 }
 AMyCityBuilderGameMode::~AMyCityBuilderGameMode() {}
+
+void AMyCityBuilderGameMode::IsEditingRoad(bool isEditing) 
+{
+    this->isEditingRoad = isEditing;
+}
