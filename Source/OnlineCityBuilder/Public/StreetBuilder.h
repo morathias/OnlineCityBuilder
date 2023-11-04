@@ -20,6 +20,7 @@ public:
 	{
 	public: 
 		FVector position;
+		float radius = 500;
 		StreetType type;
 	};
 
@@ -34,6 +35,8 @@ public:
 		TArray<FVector> vertices;
 		TArray<int32> triangles;
 		TArray<FVector2D> uvs;
+
+		TArray<const Street*> connectedStreets;
 	};
 	// Sets default values for this actor's properties
 	AStreetBuilder();
@@ -54,8 +57,13 @@ protected:
 private:	
 	void PlacingEndRoad();
 	void CalculateMesh();
-	void CalculateFacesForStreet(Street* street, int index);
+	void CalculateFacesForStreet(Street* street, int index = 0);
 	void SeamCorrection(Street* bottomStreet, Street* topStreet);
+
+	void DrawPreviewStreet(bool isPlacing);
+	void ClearPreviewStreet();
+
+	bool Raycast(FVector& outPosition);
 
 	TArray<Street*> streets;
 	Street* currentStreet;
@@ -68,4 +76,9 @@ private:
 	TArray<FVector2D> uvs;
 	UMaterialInterface* material;
 
+	UProceduralMeshComponent* streetMeshPreview;
+	TArray<FVector> verticesPreview;
+	TArray<int32> trianglesPreview;
+	TArray<FVector2D> uvsPreview;
+	UMaterialInterface* materialPreview;
 };

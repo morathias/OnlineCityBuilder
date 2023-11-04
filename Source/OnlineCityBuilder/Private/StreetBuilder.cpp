@@ -15,6 +15,7 @@ AStreetBuilder::AStreetBuilder()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	streetMesh = CreateDefaultSubobject<UProceduralMeshComponent>("StreetMesh");
+	streetMeshPreview = CreateDefaultSubobject<UProceduralMeshComponent>("StreetMeshPreview");
 }
 
 // Called when the game starts or when spawned
@@ -31,6 +32,21 @@ void AStreetBuilder::Tick(float DeltaTime)
 	if(currentStreet != nullptr)
 		PlacingEndRoad();
 
+	AMyCityBuilderGameMode* gameMode = Cast<AMyCityBuilderGameMode>(GetWorld()->GetAuthGameMode());
+	if (gameMode != nullptr && gameMode->isEditingRoad) 
+	{
+		DrawPreviewStreet(currentStreet != nullptr);
+	}
+	else
+	{
+		ClearPreviewStreet();
+	}
+
+	for (const Street* street: streets)
+	{
+		DrawDebugSphere(GetWorld(), street->startNode->position, street->startNode->radius, 16, FColor::Red);
+		DrawDebugSphere(GetWorld(), street->endNode->position, street->endNode->radius, 16, FColor::Red);
+	}
 }
 
 void AStreetBuilder::PlaceRoad(const FVector& position)
@@ -65,17 +81,10 @@ void AStreetBuilder::PlaceRoad(const FVector& position)
 
 void AStreetBuilder::PlacingEndRoad() 
 {
-	if (APlayerController* PC = Cast<APlayerController>(Cast<AMyCamera>(GetOwner())->GetController()))
+	FVector position;
+	if (Raycast(position))
 	{
-		FVector mousePos;
-		FVector mouseDir;
-		PC->DeprojectMousePositionToWorld(mousePos, mouseDir);
-		FHitResult hitResult;
-
-		if (GetWorld()->LineTraceSingleByChannel(hitResult, mousePos, mousePos + mouseDir * 100000, ECollisionChannel::ECC_Visibility))
-		{
-			currentStreet->endNode->position = hitResult.ImpactPoint;
-		}
+		currentStreet->endNode->position = position;
 	}
 
 	DrawDebugLine(GetWorld(), currentStreet->startNode->position, currentStreet->endNode->position, FColor::Blue);
@@ -93,6 +102,8 @@ void AStreetBuilder::FinishRoad()
 
 void AStreetBuilder::CancelRoad() 
 {
+	if (currentStreet == nullptr) return; //no street to cancel
+
 	if (previousStreet == nullptr) 
 	{
 		delete currentStreet->startNode;
@@ -148,10 +159,12 @@ void AStreetBuilder::CalculateMesh()
 void AStreetBuilder::SetMaterial(UMaterialInterface* roadMaterial)
 {
 	this->material = roadMaterial;
+	this->materialPreview = roadMaterial;
 	streetMesh->SetMaterial(0, material);
+	streetMeshPreview->SetMaterial(0, material);
 }
 
-void AStreetBuilder::CalculateFacesForStreet(Street* street, int index) 
+void AStreetBuilder::CalculateFacesForStreet(Street* street, int index /*= 0*/)
 {
 	FRotator rot(0, 90, 0);
 	FVector currentStreetDir = street->endNode->position - street->startNode->position;
@@ -218,4 +231,104 @@ void AStreetBuilder::SeamCorrection(Street* bottomStreet, Street* topStreet)
 
 	topStreet->vertices[0] = intersectionL;
 	topStreet->vertices[1] = intersectionR;
+}
+
+void AStreetBuilder::DrawPreviewStreet(bool isPlacing)
+{
+	if (!isPlacing) 
+	{
+		FVector position;
+		if (Raycast(position)) 
+		{
+			streetMeshPreview->SetWorldTransform(FTransform(position));
+			if (verticesPreview.Num() > 0) return; //avoid redrawing
+
+			verticesPreview.Add(FVector::LeftVector * 500 + FVector::BackwardVector * 500 + FVector::UpVector * 10);
+			verticesPreview.Add(FVector::RightVector * 500 + FVector::BackwardVector * 500 + FVector::UpVector * 10);
+			verticesPreview.Add(FVector::LeftVector * 500 + FVector::ForwardVector * 500 + FVector::UpVector * 10);
+			verticesPreview.Add(FVector::RightVector * 500 + FVector::ForwardVector * 500 + FVector::UpVector * 10);
+
+			uvsPreview.Add(FVector2D(0, 0));
+			uvsPreview.Add(FVector2D(0, 1));
+			uvsPreview.Add(FVector2D(1, 0));
+			uvsPreview.Add(FVector2D(1, 1));
+
+			//Triangle1
+			trianglesPreview.Add(0); //down left
+			trianglesPreview.Add(1); //down right
+			trianglesPreview.Add(2); // top left
+
+			//Triangle2
+			trianglesPreview.Add(2);
+			trianglesPreview.Add(1);
+			trianglesPreview.Add(3); //top right
+			UE_LOG(LogTemp, Warning, TEXT("drawing preview"));
+
+			streetMeshPreview->CreateMeshSection(0, verticesPreview, trianglesPreview, TArray<FVector>(), uvsPreview, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+		}
+		return;
+	}
+
+	ClearPreviewStreet();
+
+	streetMeshPreview->SetWorldTransform(FTransform(currentStreet->startNode->position));
+
+	FRotator rot(0, 90, 0);
+	FVector currentStreetDir = currentStreet->endNode->position - currentStreet->startNode->position;
+	float streetLength = currentStreetDir.Length();
+	currentStreetDir.Normalize();
+	FVector currentStreetTangent = rot.RotateVector(currentStreetDir);
+
+	FVector currentStreetVertDownLeft = currentStreetTangent * -1 * currentStreet->width * 0.5 + FVector::UpVector * 10;
+	FVector currentStreetVertDownRight = currentStreetTangent * currentStreet->width * 0.5 + FVector::UpVector * 10;
+	FVector currentStreetVertTopLeft = currentStreetDir * streetLength + currentStreetTangent * -1 * currentStreet->width * 0.5 + FVector::UpVector * 10;
+	FVector currentStreetVertTopRight = currentStreetDir * streetLength + currentStreetTangent * currentStreet->width * 0.5 + FVector::UpVector * 10;
+
+	verticesPreview.Add(currentStreetVertDownLeft);
+	verticesPreview.Add(currentStreetVertDownRight);
+	verticesPreview.Add(currentStreetVertTopLeft);
+	verticesPreview.Add(currentStreetVertTopRight);
+
+	uvsPreview.Add(FVector2D(0, 0));
+	uvsPreview.Add(FVector2D(0, 1));
+	uvsPreview.Add(FVector2D(1, 0));
+	uvsPreview.Add(FVector2D(1, 1));
+
+	//Triangle1
+	trianglesPreview.Add(0); //down left
+	trianglesPreview.Add(1); //down right
+	trianglesPreview.Add(2); // top left
+
+	//Triangle2
+	trianglesPreview.Add(2);
+	trianglesPreview.Add(1);
+	trianglesPreview.Add(3); //top right
+
+	streetMeshPreview->CreateMeshSection(0, verticesPreview, trianglesPreview, TArray<FVector>(), uvsPreview, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+}
+
+void AStreetBuilder::ClearPreviewStreet()
+{
+	verticesPreview.Empty();
+	uvsPreview.Empty();
+	trianglesPreview.Empty();
+	streetMeshPreview->ClearAllMeshSections();
+}
+
+bool AStreetBuilder::Raycast(FVector& outPosition) 
+{
+	if (APlayerController* PC = Cast<APlayerController>(Cast<AMyCamera>(GetOwner())->GetController()))
+	{
+		FVector mousePos;
+		FVector mouseDir;
+		PC->DeprojectMousePositionToWorld(mousePos, mouseDir);
+		FHitResult hitResult;
+		if (GetWorld()->LineTraceSingleByChannel(hitResult, mousePos, mousePos + mouseDir * 100000, ECollisionChannel::ECC_Visibility))
+		{
+			outPosition = hitResult.ImpactPoint;
+			return true;
+		}
+	}
+
+	return false;
 }
