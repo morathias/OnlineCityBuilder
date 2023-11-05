@@ -44,8 +44,8 @@ void AStreetBuilder::Tick(float DeltaTime)
 
 	for (const Street* street: streets)
 	{
-		DrawDebugSphere(GetWorld(), street->startNode->position, street->startNode->radius, 16, FColor::Red);
-		DrawDebugSphere(GetWorld(), street->endNode->position, street->endNode->radius, 16, FColor::Red);
+		DrawDebugSphere(GetWorld(), street->startNode.position, street->startNode.radius, 16, FColor::Red);
+		DrawDebugSphere(GetWorld(), street->endNode.position, street->endNode.radius, 16, FColor::Red);
 	}
 }
 
@@ -53,29 +53,24 @@ void AStreetBuilder::PlaceRoad(const FVector& position)
 {
 	if (currentStreet == nullptr)
 	{
-		StreetNode* startNode = new StreetNode();
-		startNode->position = position;
-		startNode->type = StreetType::OneLane;
-
-		StreetNode* endNode = new StreetNode();
-		endNode->position = position;
-		endNode->type = StreetType::OneLane;
-
 		currentStreet = new Street();
-		currentStreet->startNode = startNode;
-		currentStreet->endNode = endNode;
+
+		currentStreet->startNode.position = position;
+		currentStreet->startNode.type = StreetType::OneLane;
+
+		currentStreet->endNode.position = position;
+		currentStreet->endNode.type = StreetType::OneLane;
 	}
 	else
 	{
 		previousStreet = currentStreet;
 		FinishRoad();
 
-		currentStreet = new Street();
+		currentStreet = new Street(previousStreet->endNode);
+		currentStreet->endNode.position = position;
 
-		currentStreet->startNode = previousStreet->endNode;
-
-		currentStreet->endNode = new StreetNode();
-		currentStreet->endNode->position = position;
+		currentStreet->connectedStreets.Add(previousStreet);
+		previousStreet->connectedStreets.Add(currentStreet);
 	}
 }
 
@@ -84,12 +79,12 @@ void AStreetBuilder::PlacingEndRoad()
 	FVector position;
 	if (Raycast(position))
 	{
-		currentStreet->endNode->position = position;
+		currentStreet->endNode.position = position;
 	}
 
-	DrawDebugLine(GetWorld(), currentStreet->startNode->position, currentStreet->endNode->position, FColor::Blue);
-	DrawDebugSphere(GetWorld(), currentStreet->startNode->position, 100, 12, FColor::Blue);
-	DrawDebugSphere(GetWorld(), currentStreet->endNode->position, 100, 12, FColor::Blue);
+	DrawDebugLine(GetWorld(), currentStreet->startNode.position, currentStreet->endNode.position, FColor::Blue);
+	DrawDebugSphere(GetWorld(), currentStreet->startNode.position, 100, 12, FColor::Blue);
+	DrawDebugSphere(GetWorld(), currentStreet->endNode.position, 100, 12, FColor::Blue);
 }
 
 void AStreetBuilder::FinishRoad() 
@@ -104,11 +99,6 @@ void AStreetBuilder::CancelRoad()
 {
 	if (currentStreet == nullptr) return; //no street to cancel
 
-	if (previousStreet == nullptr) 
-	{
-		delete currentStreet->startNode;
-	}
-	delete currentStreet->endNode;
 	delete currentStreet;
 	currentStreet = nullptr;
 
@@ -122,35 +112,24 @@ void AStreetBuilder::CalculateMesh()
 	uvs.Empty();
 	streetMesh->ClearAllMeshSections();
 
-	if (streets.Num() == 1) 
+	Street* lastPlacedStreet = streets[streets.Num() - 1];
+	CalculateFacesForStreet(lastPlacedStreet, streets.Num() - 1);
+		
+	for (Street* connectedStreet : lastPlacedStreet->connectedStreets) 
 	{
-		CalculateFacesForStreet(streets[0], 0);
+		bool connectedStreetCalculated = connectedStreet->vertices.Num() != 0;
+		if (!connectedStreetCalculated)
+			CalculateFacesForStreet(connectedStreet, streets.IndexOfByKey(connectedStreet));
 
-		vertices.Append(streets[0]->vertices);
-		uvs.Append(streets[0]->uvs);
-		triangles.Append(streets[0]->triangles);
+		SeamCorrection(connectedStreet, lastPlacedStreet);
 	}
-	else
+
+
+	for (const Street* street : streets) 
 	{
-		Street* topStreet = streets[streets.Num() - 1];
-		Street* bottomStreet = streets[streets.Num() - 2];
-
-		bool bottomStreetCalculated = bottomStreet->vertices.Num() != 0;
-		if (!bottomStreetCalculated)
-			CalculateFacesForStreet(bottomStreet, streets.Num() - 2);
-
-		bool topStreetCalculated = topStreet->vertices.Num() != 0;
-		if(!topStreetCalculated)
-			CalculateFacesForStreet(topStreet, streets.Num() - 1);
-
-		SeamCorrection(bottomStreet, topStreet);
-
-		for (const Street* street : streets) 
-		{
-			vertices.Append(street->vertices);
-			uvs.Append(street->uvs);
-			triangles.Append(street->triangles);
-		}
+		vertices.Append(street->vertices);
+		uvs.Append(street->uvs);
+		triangles.Append(street->triangles);
 	}
 
 	streetMesh->CreateMeshSection(0, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), true);
@@ -167,14 +146,14 @@ void AStreetBuilder::SetMaterial(UMaterialInterface* roadMaterial)
 void AStreetBuilder::CalculateFacesForStreet(Street* street, int index /*= 0*/)
 {
 	FRotator rot(0, 90, 0);
-	FVector currentStreetDir = street->endNode->position - street->startNode->position;
+	FVector currentStreetDir = street->endNode.position - street->startNode.position;
 	currentStreetDir.Normalize();
 	FVector currentStreetTangent = rot.RotateVector(currentStreetDir);
 
-	FVector currentStreetVertDownLeft = street->startNode->position + currentStreetTangent * -1 * street->width * 0.5 + FVector::UpVector * 10;
-	FVector currentStreetVertDownRight = street->startNode->position + currentStreetTangent * street->width * 0.5 + FVector::UpVector * 10;
-	FVector currentStreetVertTopLeft = street->endNode->position + currentStreetTangent * -1 * street->width * 0.5 + FVector::UpVector * 10;
-	FVector currentStreetVertTopRight = street->endNode->position + currentStreetTangent * street->width * 0.5 + FVector::UpVector * 10;
+	FVector currentStreetVertDownLeft = street->startNode.position + currentStreetTangent * -1 * street->width * 0.5 + FVector::UpVector * 10;
+	FVector currentStreetVertDownRight = street->startNode.position + currentStreetTangent * street->width * 0.5 + FVector::UpVector * 10;
+	FVector currentStreetVertTopLeft = street->endNode.position + currentStreetTangent * -1 * street->width * 0.5 + FVector::UpVector * 10;
+	FVector currentStreetVertTopRight = street->endNode.position + currentStreetTangent * street->width * 0.5 + FVector::UpVector * 10;
 
 	street->vertices.Add(currentStreetVertDownLeft);
 	street->vertices.Add(currentStreetVertDownRight);
@@ -206,14 +185,14 @@ void AStreetBuilder::SeamCorrection(Street* bottomStreet, Street* topStreet)
 	FVector bottomStreetVertDownRight = bottomStreet->vertices[1];
 	FVector bottomStreetVertTopLeft = bottomStreet->vertices[2];
 	FVector bottomStreetVertTopRight = bottomStreet->vertices[3];
-	FVector bottomStreetDir = bottomStreet->endNode->position - bottomStreet->startNode->position;
+	FVector bottomStreetDir = bottomStreet->endNode.position - bottomStreet->startNode.position;
 	bottomStreetDir.Normalize();
 
 	FVector topStreetVertDownLeft = topStreet->vertices[0];
 	FVector topStreetVertDownRight = topStreet->vertices[1];
 	FVector topStreetVertTopLeft = topStreet->vertices[2];
 	FVector topStreetVertTopRight = topStreet->vertices[3];
-	FVector topStreetDir = (topStreet->endNode->position - topStreet->startNode->position) * -1;
+	FVector topStreetDir = (topStreet->endNode.position - topStreet->startNode.position) * -1;
 	topStreetDir.Normalize();
 
 	FVector intersectionL;
@@ -271,10 +250,10 @@ void AStreetBuilder::DrawPreviewStreet(bool isPlacing)
 
 	ClearPreviewStreet();
 
-	streetMeshPreview->SetWorldTransform(FTransform(currentStreet->startNode->position));
+	streetMeshPreview->SetWorldTransform(FTransform(currentStreet->startNode.position));
 
 	FRotator rot(0, 90, 0);
-	FVector currentStreetDir = currentStreet->endNode->position - currentStreet->startNode->position;
+	FVector currentStreetDir = currentStreet->endNode.position - currentStreet->startNode.position;
 	float streetLength = currentStreetDir.Length();
 	currentStreetDir.Normalize();
 	FVector currentStreetTangent = rot.RotateVector(currentStreetDir);

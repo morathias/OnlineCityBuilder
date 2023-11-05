@@ -16,19 +16,56 @@ class ONLINECITYBUILDER_API AStreetBuilder : public AActor
 	
 public:	
 
-	struct StreetNode
-	{
-	public: 
-		FVector position;
-		float radius = 500;
-		StreetType type;
-	};
-
 	struct Street 
 	{
 	public: 
-		StreetNode* startNode;
-		StreetNode* endNode;
+		struct Node
+		{
+		public:
+			FVector position;
+			float radius = 500;
+			StreetType type;
+			TArray<Street*> owners;
+		};
+		Node& startNode;
+		Node& endNode;
+
+		Street():
+			startNode(*(new Node())),
+			endNode(*(new Node()))
+		{
+			startNode.owners.Add(this);
+			startNode.radius = width * 0.5;
+
+			endNode.owners.Add(this);
+			endNode.radius = width * 0.5;
+		}
+
+		Street(Node& sharedStartNode) :
+			startNode(sharedStartNode),
+			endNode(*(new Node()))
+		{
+			startNode.owners.Add(this);
+			startNode.radius = width * 0.5;
+
+			endNode.owners.Add(this);
+			endNode.radius = width * 0.5;
+		}
+
+		~Street() 
+		{
+			if (&startNode != nullptr) 
+			{
+				startNode.owners.Remove(this);
+				if (startNode.owners.Num() == 0) delete& startNode;
+			}
+
+			if (&endNode != nullptr)
+			{
+				endNode.owners.Remove(this);
+				if (endNode.owners.Num() == 0) delete& startNode;
+			}
+		}
 
 		float width = 1000;
 
@@ -36,8 +73,9 @@ public:
 		TArray<int32> triangles;
 		TArray<FVector2D> uvs;
 
-		TArray<const Street*> connectedStreets;
+		TArray<Street*> connectedStreets;
 	};
+
 	// Sets default values for this actor's properties
 	AStreetBuilder();
 
