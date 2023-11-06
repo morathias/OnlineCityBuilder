@@ -29,13 +29,26 @@ void AStreetBuilder::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if(currentStreet != nullptr)
+	if(currentStreet != nullptr && intersectingStreet == nullptr)
 		PlacingEndRoad();
 
 	AMyCityBuilderGameMode* gameMode = Cast<AMyCityBuilderGameMode>(GetWorld()->GetAuthGameMode());
 	if (gameMode != nullptr && gameMode->isEditingRoad) 
 	{
 		DrawPreviewStreet(currentStreet != nullptr);
+		FVector intersection;
+		if (GetIntersectingNode(intersection))
+		{
+			if (currentStreet != nullptr) 
+			{
+				currentStreet->endNode.position = intersection;
+				UE_LOG(LogTemp, Warning, TEXT("intersecting"));
+			}
+			else 
+			{
+				streetMeshPreview->SetWorldTransform(FTransform(intersection));
+			}
+		}
 	}
 	else
 	{
@@ -60,6 +73,12 @@ void AStreetBuilder::PlaceRoad(const FVector& position)
 
 		currentStreet->endNode.position = position;
 		currentStreet->endNode.type = StreetType::OneLane;
+
+		if (intersectingStreet != nullptr) 
+		{
+			//TODO: make streets share the same node
+			currentStreet->connectedStreets.Add(intersectingStreet);
+		}
 	}
 	else
 	{
@@ -71,6 +90,13 @@ void AStreetBuilder::PlaceRoad(const FVector& position)
 
 		currentStreet->connectedStreets.Add(previousStreet);
 		previousStreet->connectedStreets.Add(currentStreet);
+
+		if (intersectingStreet != nullptr)
+		{
+			//TODO: make streets share the same node
+			if(!currentStreet->connectedStreets.Contains(intersectingStreet))
+				currentStreet->connectedStreets.Add(intersectingStreet);
+		}
 	}
 }
 
@@ -82,9 +108,12 @@ void AStreetBuilder::PlacingEndRoad()
 		currentStreet->endNode.position = position;
 	}
 
-	DrawDebugLine(GetWorld(), currentStreet->startNode.position, currentStreet->endNode.position, FColor::Blue);
-	DrawDebugSphere(GetWorld(), currentStreet->startNode.position, 100, 12, FColor::Blue);
-	DrawDebugSphere(GetWorld(), currentStreet->endNode.position, 100, 12, FColor::Blue);
+	if (currentStreet != nullptr) 
+	{
+		DrawDebugLine(GetWorld(), currentStreet->startNode.position, currentStreet->endNode.position, FColor::Blue);
+		DrawDebugSphere(GetWorld(), currentStreet->startNode.position, 100, 12, FColor::Blue);
+		DrawDebugSphere(GetWorld(), currentStreet->endNode.position, 100, 12, FColor::Blue);
+	}
 }
 
 void AStreetBuilder::FinishRoad() 
@@ -103,6 +132,8 @@ void AStreetBuilder::CancelRoad()
 	currentStreet = nullptr;
 
 	previousStreet = nullptr;
+
+	ClearPreviewStreet();
 }
 
 void AStreetBuilder::CalculateMesh() 
@@ -241,12 +272,13 @@ void AStreetBuilder::DrawPreviewStreet(bool isPlacing)
 			trianglesPreview.Add(2);
 			trianglesPreview.Add(1);
 			trianglesPreview.Add(3); //top right
-			UE_LOG(LogTemp, Warning, TEXT("drawing preview"));
 
 			streetMeshPreview->CreateMeshSection(0, verticesPreview, trianglesPreview, TArray<FVector>(), uvsPreview, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
 		}
 		return;
 	}
+
+	if (currentStreet == nullptr) return;
 
 	ClearPreviewStreet();
 
@@ -309,5 +341,27 @@ bool AStreetBuilder::Raycast(FVector& outPosition)
 		}
 	}
 
+	return false;
+}
+
+bool AStreetBuilder::GetIntersectingNode(FVector& outIntersection)
+{
+	for (Street* street : streets)
+	{
+		FVector position;
+		Raycast(position);
+		FVector closestPoint = FMath::ClosestPointOnLine(street->startNode.position, street->endNode.position, position);
+		float distanceToStreet = (closestPoint - position).Length();
+		DrawDebugLine(GetWorld(), position, closestPoint, FColor::Green);
+		if (distanceToStreet <= street->width * 0.5) 
+		{
+			DrawDebugSphere(GetWorld(), closestPoint, street->startNode.radius, 12, FColor::Green);
+			outIntersection = closestPoint;
+			intersectingStreet = street;
+			return true;
+		}
+	}
+
+	intersectingStreet = nullptr;
 	return false;
 }

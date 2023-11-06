@@ -63,7 +63,12 @@ public:
 			if (&endNode != nullptr)
 			{
 				endNode.owners.Remove(this);
-				if (endNode.owners.Num() == 0) delete& startNode;
+				if (endNode.owners.Num() == 0) delete& endNode;
+			}
+
+			for (Street* street : connectedStreets) 
+			{
+				street->connectedStreets.Remove(this);
 			}
 		}
 
@@ -103,9 +108,13 @@ private:
 
 	bool Raycast(FVector& outPosition);
 
+	bool GetIntersectingNode(FVector& outIntersection);
+	void SplitOrConnectStreet();
+
 	TArray<Street*> streets;
 	Street* currentStreet;
 	Street* previousStreet;
+	Street* intersectingStreet;
 
 	UPROPERTY()
 	UProceduralMeshComponent* streetMesh;
