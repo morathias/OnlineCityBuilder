@@ -41,8 +41,7 @@ void AStreetBuilder::Tick(float DeltaTime)
 		{
 			if (currentStreet != nullptr) 
 			{
-				currentStreet->endNode.position = intersection;
-				UE_LOG(LogTemp, Warning, TEXT("intersecting"));
+				currentStreet->endNode->position = intersection;
 			}
 			else 
 			{
@@ -57,8 +56,8 @@ void AStreetBuilder::Tick(float DeltaTime)
 
 	for (const Street* street: streets)
 	{
-		DrawDebugSphere(GetWorld(), street->startNode.position, street->startNode.radius, 16, FColor::Red);
-		DrawDebugSphere(GetWorld(), street->endNode.position, street->endNode.radius, 16, FColor::Red);
+		DrawDebugSphere(GetWorld(), street->startNode->position, street->startNode->radius, 16, FColor::Red);
+		DrawDebugSphere(GetWorld(), street->endNode->position, street->endNode->radius, 16, FColor::Red);
 	}
 }
 
@@ -66,38 +65,57 @@ void AStreetBuilder::PlaceRoad(const FVector& position)
 {
 	if (currentStreet == nullptr)
 	{
-		currentStreet = new Street();
+		//creating street from an existing one, so connect the new one to the existing one
+		if (intersectingNode != nullptr)
+		{
+			currentStreet = new Street(intersectingNode, nullptr); //create new end node and share start node
+			intersectingStreet->ConnectStreet(currentStreet);
+		}
+		else
+		{
+			currentStreet = new Street();
 
-		currentStreet->startNode.position = position;
-		currentStreet->startNode.type = StreetType::OneLane;
+			currentStreet->startNode->position = position;
+			currentStreet->startNode->type = StreetType::OneLane;
+		}
 
-		currentStreet->endNode.position = position;
-		currentStreet->endNode.type = StreetType::OneLane;
+		currentStreet->endNode->position = position;
+		currentStreet->endNode->type = StreetType::OneLane;
 
+		//connect existing road to new one
 		if (intersectingStreet != nullptr) 
 		{
-			//TODO: make streets share the same node
-			currentStreet->connectedStreets.Add(intersectingStreet);
+			currentStreet->ConnectStreet(intersectingStreet);
+			intersectingStreet->ConnectStreet(currentStreet);
 		}
 	}
 	else
 	{
+		if (intersectingNode != nullptr)
+		{
+			currentStreet->UpdateEndNode(intersectingNode);
+
+			currentStreet->ConnectStreet(intersectingStreet);
+			intersectingStreet->ConnectStreet(currentStreet);
+
+			intersectingNode = nullptr;
+		}
 		previousStreet = currentStreet;
 		FinishRoad();
 
-		currentStreet = new Street(previousStreet->endNode);
-		currentStreet->endNode.position = position;
+		currentStreet = new Street(previousStreet->endNode, nullptr);
+		currentStreet->endNode->position = position;
 
-		currentStreet->connectedStreets.Add(previousStreet);
-		previousStreet->connectedStreets.Add(currentStreet);
+		currentStreet->ConnectStreet(previousStreet);
+		previousStreet->ConnectStreet(currentStreet);
 
 		if (intersectingStreet != nullptr)
 		{
-			//TODO: make streets share the same node
-			if(!currentStreet->connectedStreets.Contains(intersectingStreet))
-				currentStreet->connectedStreets.Add(intersectingStreet);
+			currentStreet->ConnectStreet(intersectingStreet);
+			intersectingStreet->ConnectStreet(currentStreet);
 		}
 	}
+
 }
 
 void AStreetBuilder::PlacingEndRoad() 
@@ -105,20 +123,24 @@ void AStreetBuilder::PlacingEndRoad()
 	FVector position;
 	if (Raycast(position))
 	{
-		currentStreet->endNode.position = position;
+		currentStreet->endNode->position = position;
 	}
 
 	if (currentStreet != nullptr) 
 	{
-		DrawDebugLine(GetWorld(), currentStreet->startNode.position, currentStreet->endNode.position, FColor::Blue);
-		DrawDebugSphere(GetWorld(), currentStreet->startNode.position, 100, 12, FColor::Blue);
-		DrawDebugSphere(GetWorld(), currentStreet->endNode.position, 100, 12, FColor::Blue);
+		DrawDebugLine(GetWorld(), currentStreet->startNode->position, currentStreet->endNode->position, FColor::Blue);
+		DrawDebugSphere(GetWorld(), currentStreet->startNode->position, 100, 12, FColor::Blue);
+		DrawDebugSphere(GetWorld(), currentStreet->endNode->position, 100, 12, FColor::Blue);
 	}
 }
 
 void AStreetBuilder::FinishRoad() 
 {
 	streets.Add(currentStreet);
+
+	MarkNodeAsDirty(currentStreet->startNode);
+	MarkNodeAsDirty(currentStreet->endNode);
+
 	currentStreet = nullptr;
 
 	CalculateMesh();
@@ -145,16 +167,9 @@ void AStreetBuilder::CalculateMesh()
 
 	Street* lastPlacedStreet = streets[streets.Num() - 1];
 	CalculateFacesForStreet(lastPlacedStreet, streets.Num() - 1);
-		
-	for (Street* connectedStreet : lastPlacedStreet->connectedStreets) 
-	{
-		bool connectedStreetCalculated = connectedStreet->vertices.Num() != 0;
-		if (!connectedStreetCalculated)
-			CalculateFacesForStreet(connectedStreet, streets.IndexOfByKey(connectedStreet));
+	SeamCorrection(lastPlacedStreet);
 
-		SeamCorrection(connectedStreet, lastPlacedStreet);
-	}
-
+	dirtyNodes.Empty();
 
 	for (const Street* street : streets) 
 	{
@@ -177,14 +192,14 @@ void AStreetBuilder::SetMaterial(UMaterialInterface* roadMaterial)
 void AStreetBuilder::CalculateFacesForStreet(Street* street, int index /*= 0*/)
 {
 	FRotator rot(0, 90, 0);
-	FVector currentStreetDir = street->endNode.position - street->startNode.position;
+	FVector currentStreetDir = street->endNode->position - street->startNode->position;
 	currentStreetDir.Normalize();
 	FVector currentStreetTangent = rot.RotateVector(currentStreetDir);
 
-	FVector currentStreetVertDownLeft = street->startNode.position + currentStreetTangent * -1 * street->width * 0.5 + FVector::UpVector * 10;
-	FVector currentStreetVertDownRight = street->startNode.position + currentStreetTangent * street->width * 0.5 + FVector::UpVector * 10;
-	FVector currentStreetVertTopLeft = street->endNode.position + currentStreetTangent * -1 * street->width * 0.5 + FVector::UpVector * 10;
-	FVector currentStreetVertTopRight = street->endNode.position + currentStreetTangent * street->width * 0.5 + FVector::UpVector * 10;
+	FVector currentStreetVertDownLeft = street->startNode->position + currentStreetTangent * -1 * street->width * 0.5 + FVector::UpVector * 10;
+	FVector currentStreetVertDownRight = street->startNode->position + currentStreetTangent * street->width * 0.5 + FVector::UpVector * 10;
+	FVector currentStreetVertTopLeft = street->endNode->position + currentStreetTangent * -1 * street->width * 0.5 + FVector::UpVector * 10;
+	FVector currentStreetVertTopRight = street->endNode->position + currentStreetTangent * street->width * 0.5 + FVector::UpVector * 10;
 
 	street->vertices.Add(currentStreetVertDownLeft);
 	street->vertices.Add(currentStreetVertDownRight);
@@ -207,40 +222,69 @@ void AStreetBuilder::CalculateFacesForStreet(Street* street, int index /*= 0*/)
 	street->triangles.Add(index * 4 + 3); //top right
 }
 
-void AStreetBuilder::SeamCorrection(Street* bottomStreet, Street* topStreet) 
+void AStreetBuilder::SeamCorrection(Street* topStreet) 
 {
-	if (bottomStreet->vertices[2] == topStreet->vertices[0]) //already corrected
-		return;
+	//for each node vertex, check intersection with all connected streets borders
+	//Get nearest intersection point to vertex
+	//if two intersection point are at same distance to vertex, get the point existing in the current street border
+	//if an intersection point is at the same distance as the vertex, discard intersection point
 
-	FVector bottomStreetVertDownLeft = bottomStreet->vertices[0];
-	FVector bottomStreetVertDownRight = bottomStreet->vertices[1];
-	FVector bottomStreetVertTopLeft = bottomStreet->vertices[2];
-	FVector bottomStreetVertTopRight = bottomStreet->vertices[3];
-	FVector bottomStreetDir = bottomStreet->endNode.position - bottomStreet->startNode.position;
-	bottomStreetDir.Normalize();
+	if (dirtyNodes.Contains(topStreet->endNode))//only nodes that were modified need to be calculated
+	{ 
+		GetIntersectionForNodeVertices(*topStreet->endNode);
+	}
+	if (dirtyNodes.Contains(topStreet->startNode))
+	{
+		GetIntersectionForNodeVertices(*topStreet->startNode);
+	}
+}
 
-	FVector topStreetVertDownLeft = topStreet->vertices[0];
-	FVector topStreetVertDownRight = topStreet->vertices[1];
-	FVector topStreetVertTopLeft = topStreet->vertices[2];
-	FVector topStreetVertTopRight = topStreet->vertices[3];
-	FVector topStreetDir = (topStreet->endNode.position - topStreet->startNode.position) * -1;
-	topStreetDir.Normalize();
+void AStreetBuilder::GetIntersectionForNodeVertices(const Street::Node& node)
+{
+	if (node.owners.Num() == 1) return; //no correction needed
+	TArray<Street*> sortedStreets = SortStreetsClockwise(node);
 
-	FVector intersectionL;
-	FMath::SegmentIntersection2D(bottomStreetVertDownLeft, bottomStreetVertTopLeft + bottomStreetDir * std::numeric_limits<float>::max(),
-								 topStreetVertTopLeft, topStreetVertDownLeft + topStreetDir * std::numeric_limits<float>::max(),
-								 intersectionL);
+	for (int i = 0; i < node.owners.Num(); i++)
+	{
+		node.owners[i]->ResetVerticesPositions(&node);
+	}
 
-	FVector intersectionR;
-	FMath::SegmentIntersection2D(bottomStreetVertDownRight, bottomStreetVertTopRight + bottomStreetDir * std::numeric_limits<float>::max(),
-								 topStreetVertTopRight, topStreetVertDownRight + topStreetDir * std::numeric_limits<float>::max(),
-								 intersectionR);
+	for (int i = 1; i < sortedStreets.Num(); i++)
+	{
+		TArray<FVector*> streetVertices = sortedStreets[i - 1]->GetVerticesForNode(&node);//index 0 is always left vertex in relation of start node
+		TArray<FVector*> otherStreetVertices = sortedStreets[i]->GetVerticesForNode(&node);
 
-	bottomStreet->vertices[2] = intersectionL;
-	bottomStreet->vertices[3] = intersectionR;
+		FVector& leftVert = &node == sortedStreets[i - 1]->endNode ? *streetVertices[1] : *streetVertices[0]; // get the left vertex in relation to center of streets
+		FVector& rightVert = &node == sortedStreets[i]->endNode ? *otherStreetVertices[0] : *otherStreetVertices[1]; // get the right vertex in relation to center of streets
 
-	topStreet->vertices[0] = intersectionL;
-	topStreet->vertices[1] = intersectionR;
+		FVector leftVertexDir = &node == sortedStreets[i - 1]->endNode ? (sortedStreets[i - 1]->startNode->position - sortedStreets[i - 1]->endNode->position) :
+										(sortedStreets[i - 1]->endNode->position - sortedStreets[i - 1]->startNode->position);
+		leftVertexDir.Normalize();
+
+		FVector rightVertexDir = &node == sortedStreets[i]->endNode ? (sortedStreets[i]->startNode->position - sortedStreets[i]->endNode->position) :
+										 (sortedStreets[i]->endNode->position - sortedStreets[i]->startNode->position);
+		rightVertexDir.Normalize();
+
+		IntersectVertices(rightVert, rightVertexDir, leftVert, leftVertexDir);
+	}
+
+	//do the same but for first and last streets
+	TArray<FVector*> streetVertices = sortedStreets[sortedStreets.Num() - 1]->GetVerticesForNode(&node);
+	TArray<FVector*> otherStreetVertices = sortedStreets[0]->GetVerticesForNode(&node);
+
+	FVector& leftVert = &node == sortedStreets[sortedStreets.Num() - 1]->endNode ? *streetVertices[1] : *streetVertices[0];
+	FVector& rightVert = &node == sortedStreets[0]->endNode ? *otherStreetVertices[0] : *otherStreetVertices[1];
+
+	FVector leftVertexDir = &node == sortedStreets[sortedStreets.Num() - 1]->endNode ? (sortedStreets[sortedStreets.Num() - 1]->startNode->position - sortedStreets[sortedStreets.Num() - 1]->endNode->position) :
+									(sortedStreets[sortedStreets.Num() - 1]->endNode->position - sortedStreets[sortedStreets.Num() - 1]->startNode->position);
+	leftVertexDir.Normalize();
+
+	FVector rightVertexDir = &node == sortedStreets[0]->endNode ? (sortedStreets[0]->startNode->position - sortedStreets[0]->endNode->position) :
+									  (sortedStreets[0]->endNode->position - sortedStreets[0]->startNode->position);
+	rightVertexDir.Normalize();
+	
+	IntersectVertices(rightVert, rightVertexDir, leftVert, leftVertexDir);
+	
 }
 
 void AStreetBuilder::DrawPreviewStreet(bool isPlacing)
@@ -282,10 +326,10 @@ void AStreetBuilder::DrawPreviewStreet(bool isPlacing)
 
 	ClearPreviewStreet();
 
-	streetMeshPreview->SetWorldTransform(FTransform(currentStreet->startNode.position));
+	streetMeshPreview->SetWorldTransform(FTransform(currentStreet->startNode->position));
 
 	FRotator rot(0, 90, 0);
-	FVector currentStreetDir = currentStreet->endNode.position - currentStreet->startNode.position;
+	FVector currentStreetDir = currentStreet->endNode->position - currentStreet->startNode->position;
 	float streetLength = currentStreetDir.Length();
 	currentStreetDir.Normalize();
 	FVector currentStreetTangent = rot.RotateVector(currentStreetDir);
@@ -350,18 +394,103 @@ bool AStreetBuilder::GetIntersectingNode(FVector& outIntersection)
 	{
 		FVector position;
 		Raycast(position);
-		FVector closestPoint = FMath::ClosestPointOnLine(street->startNode.position, street->endNode.position, position);
+		FVector closestPoint = FMath::ClosestPointOnLine(street->startNode->position, street->endNode->position, position);
 		float distanceToStreet = (closestPoint - position).Length();
+
 		DrawDebugLine(GetWorld(), position, closestPoint, FColor::Green);
+
+		//Get intersecting Street
 		if (distanceToStreet <= street->width * 0.5) 
 		{
-			DrawDebugSphere(GetWorld(), closestPoint, street->startNode.radius, 12, FColor::Green);
+			DrawDebugSphere(GetWorld(), closestPoint, street->startNode->radius, 12, FColor::Green);
 			outIntersection = closestPoint;
 			intersectingStreet = street;
-			return true;
+
+			//Get intersecting node
+			if ((position - street->startNode->position).Length() <= street->startNode->radius)
+			{
+				outIntersection = street->startNode->position;
+				intersectingNode = street->startNode;
+				return true;
+			}
+			else
+			{
+				intersectingNode = nullptr;
+			}
+
+			if ((position - street->endNode->position).Length() <= street->endNode->radius)
+			{
+				outIntersection = street->endNode->position;
+				intersectingNode = street->endNode;
+				return true;
+			}
+			else
+			{
+				intersectingNode = nullptr;
+			}
+
+			return true; //return in case no intersection node was found
 		}
 	}
 
 	intersectingStreet = nullptr;
+	intersectingNode = nullptr;
 	return false;
+}
+
+void AStreetBuilder::MarkNodeAsDirty(Street::Node* dirtyNode) 
+{
+	if (!dirtyNodes.Contains(dirtyNode))
+		dirtyNodes.Add(dirtyNode);
+}
+
+TArray<Street*> AStreetBuilder::SortStreetsClockwise(const Street::Node& referenceNode) 
+{
+	TArray<Street*> sortedStreets = referenceNode.owners;
+	sortedStreets.Sort([&](Street& streetA, Street& streetB)
+		{
+			FVector center = referenceNode.position;
+			FVector a = FMath::Lerp(streetA.endNode->position, streetA.startNode->position, 0.5);
+			FVector b = FMath::Lerp(streetB.endNode->position, streetB.startNode->position, 0.5);
+
+			if (a.X - center.X >= 0 && b.X - center.X < 0)
+				return true;
+			if (a.X - center.X < 0 && b.X - center.X >= 0)
+				return false;
+			if (a.X - center.X == 0 && b.X - center.X == 0) {
+				if (a.Y - center.Y >= 0 || b.Y - center.Y >= 0)
+					return a.Y > b.Y;
+				return b.Y > a.Y;
+			}
+
+			// compute the cross product of vectors (center -> a) x (center -> b)
+			int det = (a.X - center.X) * (b.Y - center.Y) - (b.X - center.X) * (a.Y - center.Y);
+			if (det < 0)
+				return true;
+			if (det > 0)
+				return false;
+
+			// points a and b are on the same line from the center
+			// check which point is closer to the center
+			int d1 = (a.X - center.X) * (a.X - center.X) + (a.Y - center.Y) * (a.Y - center.Y);
+			int d2 = (b.X - center.X) * (b.X - center.X) + (b.Y - center.Y) * (b.Y - center.Y);
+			return d1 > d2;
+		});
+
+	return sortedStreets;
+}
+
+void AStreetBuilder::IntersectVertices(FVector& rightVert, FVector rightVertDir, FVector& leftVert, FVector leftVertDir) 
+{
+	FVector leftvertexStartPos = leftVert + (leftVertDir * -1) * 100000;
+	FVector leftvertexEndPos = leftVert + leftVertDir * 100000;
+
+	FVector rightVertexStartPos = rightVert + (rightVertDir * -1) * 100000;
+	FVector rightVertexEndPos = rightVert + rightVertDir * 100000;
+
+	FVector intersection = FVector::Zero();
+	FMath::SegmentIntersection2D(leftvertexStartPos, leftvertexEndPos, rightVertexStartPos, rightVertexEndPos, intersection);
+
+	leftVert = intersection;
+	rightVert = intersection;
 }

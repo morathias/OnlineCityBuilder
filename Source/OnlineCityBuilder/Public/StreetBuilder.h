@@ -4,9 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Street.h"
 #include "StreetBuilder.generated.h"
 
-enum StreetType;
 class UProceduralMeshComponent;
 
 UCLASS()
@@ -15,71 +15,6 @@ class ONLINECITYBUILDER_API AStreetBuilder : public AActor
 	GENERATED_BODY()
 	
 public:	
-
-	struct Street 
-	{
-	public: 
-		struct Node
-		{
-		public:
-			FVector position;
-			float radius = 500;
-			StreetType type;
-			TArray<Street*> owners;
-		};
-		Node& startNode;
-		Node& endNode;
-
-		Street():
-			startNode(*(new Node())),
-			endNode(*(new Node()))
-		{
-			startNode.owners.Add(this);
-			startNode.radius = width * 0.5;
-
-			endNode.owners.Add(this);
-			endNode.radius = width * 0.5;
-		}
-
-		Street(Node& sharedStartNode) :
-			startNode(sharedStartNode),
-			endNode(*(new Node()))
-		{
-			startNode.owners.Add(this);
-			startNode.radius = width * 0.5;
-
-			endNode.owners.Add(this);
-			endNode.radius = width * 0.5;
-		}
-
-		~Street() 
-		{
-			if (&startNode != nullptr) 
-			{
-				startNode.owners.Remove(this);
-				if (startNode.owners.Num() == 0) delete& startNode;
-			}
-
-			if (&endNode != nullptr)
-			{
-				endNode.owners.Remove(this);
-				if (endNode.owners.Num() == 0) delete& endNode;
-			}
-
-			for (Street* street : connectedStreets) 
-			{
-				street->connectedStreets.Remove(this);
-			}
-		}
-
-		float width = 1000;
-
-		TArray<FVector> vertices;
-		TArray<int32> triangles;
-		TArray<FVector2D> uvs;
-
-		TArray<Street*> connectedStreets;
-	};
 
 	// Sets default values for this actor's properties
 	AStreetBuilder();
@@ -98,10 +33,19 @@ protected:
 	virtual void BeginPlay() override;
 
 private:	
+
+	enum Vertices
+	{
+		BottomLeft,
+		BottomRight,
+		TopLeft,
+		TopRight,
+	};
+
 	void PlacingEndRoad();
 	void CalculateMesh();
 	void CalculateFacesForStreet(Street* street, int index = 0);
-	void SeamCorrection(Street* bottomStreet, Street* topStreet);
+	void SeamCorrection(Street* topStreet);
 
 	void DrawPreviewStreet(bool isPlacing);
 	void ClearPreviewStreet();
@@ -109,12 +53,18 @@ private:
 	bool Raycast(FVector& outPosition);
 
 	bool GetIntersectingNode(FVector& outIntersection);
-	void SplitOrConnectStreet();
+	void GetIntersectionForNodeVertices(const Street::Node& node);
+	void IntersectVertices(FVector& rightVert, FVector rightVertDir, FVector& leftVert, FVector leftVertDir);
+	void SplitStreet();
+	void MarkNodeAsDirty(Street::Node* dirtyNode);
+	TArray<Street*> SortStreetsClockwise(const Street::Node& referenceNode);
 
 	TArray<Street*> streets;
 	Street* currentStreet;
 	Street* previousStreet;
 	Street* intersectingStreet;
+	Street::Node* intersectingNode;
+	TArray<Street::Node*> dirtyNodes;
 
 	UPROPERTY()
 	UProceduralMeshComponent* streetMesh;
