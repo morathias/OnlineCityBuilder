@@ -125,3 +125,19 @@ TArray<FVector*> Street::GetVerticesForNode(const Node* node)
 	}
 	return selectedVertices;
 }
+
+TArray<int> Street::GetIndecesForNode(const Node* node)
+{
+	TArray<int> selectedIndeces;
+	if (node == endNode)
+	{
+		selectedIndeces.Add(2);
+		selectedIndeces.Add(3);
+	}
+	else if (node == startNode)
+	{
+		selectedIndeces.Add(0);
+		selectedIndeces.Add(1);
+	}
+	return selectedIndeces;
+}

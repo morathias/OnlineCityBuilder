@@ -54,11 +54,11 @@ void AStreetBuilder::Tick(float DeltaTime)
 		ClearPreviewStreet();
 	}
 
-	for (const Street* street: streets)
+	/*for (const Street* street : streets)
 	{
 		DrawDebugSphere(GetWorld(), street->startNode->position, street->startNode->radius, 16, FColor::Red);
 		DrawDebugSphere(GetWorld(), street->endNode->position, street->endNode->radius, 16, FColor::Red);
-	}
+	}*/
 }
 
 void AStreetBuilder::PlaceRoad(const FVector& position)
@@ -126,12 +126,12 @@ void AStreetBuilder::PlacingEndRoad()
 		currentStreet->endNode->position = position;
 	}
 
-	if (currentStreet != nullptr) 
+	/*if (currentStreet != nullptr)
 	{
 		DrawDebugLine(GetWorld(), currentStreet->startNode->position, currentStreet->endNode->position, FColor::Blue);
 		DrawDebugSphere(GetWorld(), currentStreet->startNode->position, 100, 12, FColor::Blue);
 		DrawDebugSphere(GetWorld(), currentStreet->endNode->position, 100, 12, FColor::Blue);
-	}
+	}*/
 }
 
 void AStreetBuilder::FinishRoad() 
@@ -176,6 +176,10 @@ void AStreetBuilder::CalculateMesh()
 		vertices.Append(street->vertices);
 		uvs.Append(street->uvs);
 		triangles.Append(street->triangles);
+		if(street->startNode->holeIndices.Num() > 0)
+			triangles.Append(street->startNode->holeIndices);
+		if (street->endNode->holeIndices.Num() > 0)
+			triangles.Append(street->endNode->holeIndices);
 	}
 
 	streetMesh->CreateMeshSection(0, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), true);
@@ -232,10 +236,12 @@ void AStreetBuilder::SeamCorrection(Street* topStreet)
 	if (dirtyNodes.Contains(topStreet->endNode))//only nodes that were modified need to be calculated
 	{ 
 		GetIntersectionForNodeVertices(*topStreet->endNode);
+		CalculateHolesIndeces(*topStreet->endNode);
 	}
 	if (dirtyNodes.Contains(topStreet->startNode))
 	{
 		GetIntersectionForNodeVertices(*topStreet->startNode);
+		CalculateHolesIndeces(*topStreet->startNode);
 	}
 }
 
@@ -397,12 +403,12 @@ bool AStreetBuilder::GetIntersectingNode(FVector& outIntersection)
 		FVector closestPoint = FMath::ClosestPointOnLine(street->startNode->position, street->endNode->position, position);
 		float distanceToStreet = (closestPoint - position).Length();
 
-		DrawDebugLine(GetWorld(), position, closestPoint, FColor::Green);
+		//DrawDebugLine(GetWorld(), position, closestPoint, FColor::Green);
 
 		//Get intersecting Street
 		if (distanceToStreet <= street->width * 0.5) 
 		{
-			DrawDebugSphere(GetWorld(), closestPoint, street->startNode->radius, 12, FColor::Green);
+			//DrawDebugSphere(GetWorld(), closestPoint, street->startNode->radius, 12, FColor::Green);
 			outIntersection = closestPoint;
 			intersectingStreet = street;
 
@@ -493,4 +499,34 @@ void AStreetBuilder::IntersectVertices(FVector& rightVert, FVector rightVertDir,
 
 	leftVert = intersection;
 	rightVert = intersection;
+}
+
+void AStreetBuilder::CalculateHolesIndeces(Street::Node& nodeToFill) 
+{
+	if (nodeToFill.owners.Num() <= 2) return;
+
+	nodeToFill.holeIndices.Empty();
+
+	TArray<FVector> nodeVertices;
+	TArray<Street*> sortedStreets = SortStreetsClockwise(nodeToFill);
+
+	Street* firstStreet = sortedStreets[0];
+	int firstStreetIndex = streets.IndexOfByKey(firstStreet);
+	TArray<int> firstStreetIndeces = firstStreet->GetIndecesForNode(&nodeToFill);
+	int pivotVertexIndex = &nodeToFill == firstStreet->endNode ? (firstStreetIndex * 4 + firstStreetIndeces[0]) : (firstStreetIndex * 4 + firstStreetIndeces[1]);
+
+	//we don't need the last street to fill the hole
+	for (int i = 1; i < sortedStreets.Num() - 1; i++)
+	{
+		int streetIndex = streets.IndexOfByKey(sortedStreets[i]);
+
+		TArray<int> otherStreetIndeces = sortedStreets[i]->GetIndecesForNode(&nodeToFill);
+
+		int leftVertexIndex = &nodeToFill == sortedStreets[i]->endNode ? (streetIndex * 4 + otherStreetIndeces[0]) : (streetIndex * 4 + otherStreetIndeces[1]);
+		int rightVertexIndex = &nodeToFill == sortedStreets[i]->endNode ? (streetIndex * 4 + otherStreetIndeces[1]) : (streetIndex * 4 + otherStreetIndeces[0]);
+
+		nodeToFill.holeIndices.Add(leftVertexIndex);
+		nodeToFill.holeIndices.Add(rightVertexIndex);
+		nodeToFill.holeIndices.Add(pivotVertexIndex);
+	}
 }

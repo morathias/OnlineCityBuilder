@@ -16,6 +16,7 @@ public:
 		float radius = 500;
 		StreetType type = (StreetType)0;
 		TArray<Street*> owners;
+		TArray<int> holeIndices;
 	};
 	Node* startNode;
 	Node* endNode;
@@ -34,6 +35,8 @@ public:
 	void ResetVerticesPositions(const Node* asossiatedNode);
 
 	TArray<FVector*> GetVerticesForNode(const Node* node);
+	TArray<int> GetIndecesForNode(const Node* node);
+
 
 	float width = 1000;
 

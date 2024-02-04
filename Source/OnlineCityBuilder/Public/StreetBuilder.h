@@ -58,6 +58,7 @@ private:
 	void SplitStreet();
 	void MarkNodeAsDirty(Street::Node* dirtyNode);
 	TArray<Street*> SortStreetsClockwise(const Street::Node& referenceNode);
+	void CalculateHolesIndeces(Street::Node& nodeToFill);
 
 	TArray<Street*> streets;
 	Street* currentStreet;
