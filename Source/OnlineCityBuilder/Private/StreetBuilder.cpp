@@ -75,7 +75,7 @@ void AStreetBuilder::PlaceRoad(const FVector& position)
 		{
 			currentStreet = new Street();
 
-			currentStreet->startNode->position = position;
+			currentStreet->startNode->position = streetMeshPreview->GetComponentTransform().GetLocation();
 			currentStreet->startNode->type = StreetType::OneLane;
 		}
 
@@ -87,6 +87,12 @@ void AStreetBuilder::PlaceRoad(const FVector& position)
 		{
 			currentStreet->ConnectStreet(intersectingStreet);
 			intersectingStreet->ConnectStreet(currentStreet);
+
+			//if we are not connecting to an existing node, then split the street
+			if (intersectingNode == nullptr) 
+			{
+				SplitStreet(intersectingStreet, currentStreet->startNode);
+			}
 		}
 	}
 	else
@@ -97,14 +103,17 @@ void AStreetBuilder::PlaceRoad(const FVector& position)
 
 			currentStreet->ConnectStreet(intersectingStreet);
 			intersectingStreet->ConnectStreet(currentStreet);
-
-			intersectingNode = nullptr;
 		}
+
+		if (intersectingStreet != nullptr && intersectingNode == nullptr) 
+		{
+			SplitStreet(intersectingStreet, currentStreet->endNode);
+		}
+
 		previousStreet = currentStreet;
 		FinishRoad();
 
 		currentStreet = new Street(previousStreet->endNode, nullptr);
-		currentStreet->endNode->position = position;
 
 		currentStreet->ConnectStreet(previousStreet);
 		previousStreet->ConnectStreet(currentStreet);
@@ -113,6 +122,10 @@ void AStreetBuilder::PlaceRoad(const FVector& position)
 		{
 			currentStreet->ConnectStreet(intersectingStreet);
 			intersectingStreet->ConnectStreet(currentStreet);
+		}
+		else 
+		{
+			currentStreet->endNode->position = position;
 		}
 	}
 
@@ -167,19 +180,23 @@ void AStreetBuilder::CalculateMesh()
 
 	Street* lastPlacedStreet = streets[streets.Num() - 1];
 	CalculateFacesForStreet(lastPlacedStreet, streets.Num() - 1);
-	SeamCorrection(lastPlacedStreet);
 
+	for (Street::Node* dirtyNode : dirtyNodes) 
+	{
+		GetIntersectionForNodeVertices(*dirtyNode);
+		CalculateHolesIndeces(*dirtyNode);
+	}
 	dirtyNodes.Empty();
 
 	for (const Street* street : streets) 
 	{
 		vertices.Append(street->vertices);
+
 		uvs.Append(street->uvs);
+
 		triangles.Append(street->triangles);
-		if(street->startNode->holeIndices.Num() > 0)
-			triangles.Append(street->startNode->holeIndices);
-		if (street->endNode->holeIndices.Num() > 0)
-			triangles.Append(street->endNode->holeIndices);
+		triangles.Append(street->startNode->holeIndices);
+		triangles.Append(street->endNode->holeIndices);
 	}
 
 	streetMesh->CreateMeshSection(0, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), true);
@@ -249,6 +266,10 @@ void AStreetBuilder::GetIntersectionForNodeVertices(const Street::Node& node)
 {
 	if (node.owners.Num() == 1) return; //no correction needed
 	TArray<Street*> sortedStreets = SortStreetsClockwise(node);
+	for (Street* street : sortedStreets) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("street: %i"), streets.IndexOfByKey(street));
+	}
 
 	for (int i = 0; i < node.owners.Num(); i++)
 	{
@@ -271,7 +292,9 @@ void AStreetBuilder::GetIntersectionForNodeVertices(const Street::Node& node)
 										 (sortedStreets[i]->endNode->position - sortedStreets[i]->startNode->position);
 		rightVertexDir.Normalize();
 
-		IntersectVertices(rightVert, rightVertexDir, leftVert, leftVertexDir);
+		float vertexDist = (leftVert - rightVert).Length();
+		if(vertexDist > 0)
+			IntersectVertices(rightVert, rightVertexDir, leftVert, leftVertexDir);
 	}
 
 	//do the same but for first and last streets
@@ -288,8 +311,10 @@ void AStreetBuilder::GetIntersectionForNodeVertices(const Street::Node& node)
 	FVector rightVertexDir = &node == sortedStreets[0]->endNode ? (sortedStreets[0]->startNode->position - sortedStreets[0]->endNode->position) :
 									  (sortedStreets[0]->endNode->position - sortedStreets[0]->startNode->position);
 	rightVertexDir.Normalize();
-	
-	IntersectVertices(rightVert, rightVertexDir, leftVert, leftVertexDir);
+
+	float vertexDist = (leftVert - rightVert).Length();
+	if (vertexDist > 0)
+		IntersectVertices(rightVert, rightVertexDir, leftVert, leftVertexDir);
 	
 }
 
@@ -530,3 +555,27 @@ void AStreetBuilder::CalculateHolesIndeces(Street::Node& nodeToFill)
 		nodeToFill.holeIndices.Add(pivotVertexIndex);
 	}
 }
+
+void AStreetBuilder::SplitStreet(Street* streetToSplit, Street::Node* splitNode) 
+{
+	Street::Node* oldEndNode = streetToSplit->endNode;
+
+	UE_LOG(LogTemp, Warning, TEXT("intersecting street: %i"), streets.IndexOfByKey(streetToSplit));
+
+	Street* newStreet = new Street(oldEndNode, splitNode);
+	newStreet->ConnectStreet(streetToSplit);
+	newStreet->ConnectStreet(currentStreet);
+	streets.Add(newStreet);
+	CalculateFacesForStreet(newStreet, streets.Num() - 1);
+
+	streetToSplit->UpdateEndNode(splitNode);
+	streetToSplit->ConnectStreet(currentStreet);
+	streetToSplit->ConnectStreet(newStreet);
+
+	currentStreet->ConnectStreet(streetToSplit);
+	currentStreet->ConnectStreet(newStreet);
+
+	MarkNodeAsDirty(splitNode);
+	MarkNodeAsDirty(oldEndNode);
+}
+

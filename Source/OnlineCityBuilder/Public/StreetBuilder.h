@@ -55,7 +55,7 @@ private:
 	bool GetIntersectingNode(FVector& outIntersection);
 	void GetIntersectionForNodeVertices(const Street::Node& node);
 	void IntersectVertices(FVector& rightVert, FVector rightVertDir, FVector& leftVert, FVector leftVertDir);
-	void SplitStreet();
+	void SplitStreet(Street* streetToSplit, Street::Node* splitNode);
 	void MarkNodeAsDirty(Street::Node* dirtyNode);
 	TArray<Street*> SortStreetsClockwise(const Street::Node& referenceNode);
 	void CalculateHolesIndeces(Street::Node& nodeToFill);
