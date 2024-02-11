@@ -24,6 +24,8 @@ void AMyCamera::BeginPlay()
     streetBuilder = GetWorld()->SpawnActor<AStreetBuilder>(AStreetBuilder::StaticClass());
     streetBuilder->SetOwner(this);
     streetBuilder->SetMaterial(roadMaterial);
+
+    SetActorRotation(FRotator(-45, 0, 0));
 }
 
 // Called every frame
@@ -31,6 +33,7 @@ void AMyCamera::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+    CalculateCurrentSpeed();
     SetActorLocation(FMath::Lerp(GetActorLocation(), targetPos, smoothing * DeltaTime));
 }
 
@@ -41,11 +44,13 @@ void AMyCamera::Move(FVector2D value)
     movementDir.Y = axis.Y;
 
     FVector forward = GetActorForwardVector();
+    forward.Z = 0;
+    forward.Normalize();
     FVector right = GetActorRightVector();
 
     FVector translation = (forward * movementDir.Y + right * movementDir.X);
     translation.Normalize();
-    translation *= speed;
+    translation *= currentSpeed;
 
     targetPos += translation;
 }
@@ -54,10 +59,12 @@ void AMyCamera::Zoom(float value)
 {
     movementDir.Z = value;
 
-    FVector up = GetActorUpVector();
+    FVector up = FVector::UpVector;
     FVector zoom = up * movementDir.Z * zoomSpeed;
 
     targetPos += zoom;
+
+    targetPos.Z = FMath::Clamp(targetPos.Z, verticalLimit.X, verticalLimit.Y);
 }
 
 void AMyCamera::PlaceObject()
@@ -87,5 +94,18 @@ void AMyCamera::CancelPlacement()
     streetBuilder->CancelRoad();
 }
 
+void AMyCamera::CalculateCurrentSpeed() 
+{
+    currentSpeed = FMath::Lerp(speedRange.X, speedRange.Y, GetActorLocation().Z / verticalLimit.Y);
+}
 
+void AMyCamera::Rotate(FVector2D mouseDelta) 
+{
+    FRotator currentRot = GetActorRotation();
 
+    float yaw = currentRot.Yaw + mouseDelta.X;
+    float pitch = currentRot.Pitch + mouseDelta.Y;
+    FRotator targetRot = FRotator(pitch, yaw, currentRot.Roll);
+
+    SetActorRotation(targetRot);
+}

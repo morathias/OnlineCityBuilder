@@ -53,6 +53,11 @@ void AMyCameraController::SetupInputComponent()
         {
             playerEnhancedInputComponent->BindAction(cancelPlacementInputAction, ETriggerEvent::Started, this, &AMyCameraController::CancelPlacement);
         }
+
+        if (rotateInputAction)
+        {
+            playerEnhancedInputComponent->BindAction(rotateInputAction, ETriggerEvent::Triggered , this, &AMyCameraController::Rotate);
+        }
     }
 }
 
@@ -76,4 +81,9 @@ void AMyCameraController::CancelPlacement(const FInputActionValue& value)
 {
     if (value.Get<bool>())
         possessedPawn->CancelPlacement();
+}
+
+void AMyCameraController::Rotate(const FInputActionValue& value) 
+{
+    possessedPawn->Rotate(value.Get<FVector2D>());
 }

@@ -30,6 +30,7 @@ private:
 
 	void Move(const FInputActionValue& value);
 	void Zoom(const FInputActionValue& value);
+	void Rotate(const FInputActionValue& value);
 
 	void PlaceObject(const FInputActionValue& value);
 	void CancelPlacement(const FInputActionValue& value);
@@ -49,6 +50,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
 	UInputAction* cancelPlacementInputAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* rotateInputAction;
 
 	AMyCamera* possessedPawn;
 };

@@ -23,6 +23,7 @@ public:
 
 	void Move(FVector2D value);
 	void Zoom(float value);
+	void Rotate(FVector2D mouseDelta);
 
 	void PlaceObject();
 	void CancelPlacement();
@@ -31,7 +32,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-private:	
+private:
+	void CalculateCurrentSpeed();
 
 	UPROPERTY(EditAnywhere, Category = "Road Editing")
 	float rayLength = 10000;
@@ -40,7 +42,7 @@ private:
 	UMaterialInterface* roadMaterial;
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
-	float speed = 10;
+	FVector speedRange;
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float zoomSpeed = 10;
@@ -48,8 +50,13 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float smoothing = 5;
 
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	FVector2D verticalLimit;
+
 	FVector movementDir;
 	FVector targetPos;
+
+	float currentSpeed;
 
 	AStreetBuilder* streetBuilder;
 };
