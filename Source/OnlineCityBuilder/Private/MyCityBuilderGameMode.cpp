@@ -10,8 +10,6 @@ AMyCityBuilderGameMode::AMyCityBuilderGameMode()
     PrimaryActorTick.bCanEverTick = false;
     PrimaryActorTick.bStartWithTickEnabled = false;
     PrimaryActorTick.bAllowTickOnDedicatedServer = false;
-
-    DefaultPawnClass = AMyCamera::StaticClass();
 }
 AMyCityBuilderGameMode::~AMyCityBuilderGameMode() {}
 

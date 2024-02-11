@@ -4,11 +4,6 @@
 #include "MyCamera.h"
 
 #include "StreetBuilder.h"
-
-#include <InputMappingContext.h>
-#include <InputAction.h>
-#include <EnhancedInputSubsystems.h>
-#include <EnhancedInputComponent.h>
 #include "MyCityBuilderGameMode.h"
 
 // Sets default values
@@ -39,9 +34,9 @@ void AMyCamera::Tick(float DeltaTime)
     SetActorLocation(FMath::Lerp(GetActorLocation(), targetPos, smoothing * DeltaTime));
 }
 
-void AMyCamera::Move(const FInputActionValue& value)
+void AMyCamera::Move(FVector2D value)
 {
-    FVector2D axis = value.Get<FVector2D>();
+    FVector2D axis = value;
     movementDir.X = axis.X;
     movementDir.Y = axis.Y;
 
@@ -55,9 +50,9 @@ void AMyCamera::Move(const FInputActionValue& value)
     targetPos += translation;
 }
 
-void AMyCamera::Zoom(const FInputActionValue& value)
+void AMyCamera::Zoom(float value)
 {
-    movementDir.Z = value.Get<float>();
+    movementDir.Z = value;
 
     FVector up = GetActorUpVector();
     FVector zoom = up * movementDir.Z * zoomSpeed;
@@ -65,10 +60,8 @@ void AMyCamera::Zoom(const FInputActionValue& value)
     targetPos += zoom;
 }
 
-void AMyCamera::PlaceObject(const FInputActionValue& value)
+void AMyCamera::PlaceObject()
 {
-    if (!value.Get<bool>()) return;
-
     AMyCityBuilderGameMode* gameMode = Cast<AMyCityBuilderGameMode>(GetWorld()->GetAuthGameMode());
     if (gameMode == nullptr || !gameMode->isEditingRoad) return;
 
@@ -86,53 +79,13 @@ void AMyCamera::PlaceObject(const FInputActionValue& value)
     }
 }
 
-void AMyCamera::CancelPlacement(const FInputActionValue& value) 
+void AMyCamera::CancelPlacement() 
 {
-    if (!value.Get<bool>()) return;
-
     AMyCityBuilderGameMode* gameMode = Cast<AMyCityBuilderGameMode>(GetWorld()->GetAuthGameMode());
     if (gameMode == nullptr || !gameMode->isEditingRoad) return;
 
     streetBuilder->CancelRoad();
 }
 
-// Called to bind functionality to input
-void AMyCamera::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-    if (APlayerController* PC = Cast<APlayerController>(GetController()))
-    {
-        // Get the local player subsystem
-        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
-        {
-            // Clear out existing mapping, and add our mapping
-            Subsystem->ClearAllMappings();
-            Subsystem->AddMappingContext(inputMapping, 0);
-        }
-    }
 
-    if (UEnhancedInputComponent* playerEnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-    {
-        if (moveInputAction)
-        {
-            playerEnhancedInputComponent->BindAction(moveInputAction, ETriggerEvent::Triggered, this, &AMyCamera::Move);
-            playerEnhancedInputComponent->BindAction(moveInputAction, ETriggerEvent::Completed, this, &AMyCamera::Move);
-        }
-
-        if (zoomInputAction) 
-        {
-            playerEnhancedInputComponent->BindAction(zoomInputAction, ETriggerEvent::Triggered, this, &AMyCamera::Zoom);
-            playerEnhancedInputComponent->BindAction(zoomInputAction, ETriggerEvent::Completed, this, &AMyCamera::Zoom);
-        }
-
-        if (placeObjectInputAction)
-        {
-            playerEnhancedInputComponent->BindAction(placeObjectInputAction, ETriggerEvent::Started, this, &AMyCamera::PlaceObject);
-        }
-
-        if (cancelPlacementInputAction)
-        {
-            playerEnhancedInputComponent->BindAction(cancelPlacementInputAction, ETriggerEvent::Started, this, &AMyCamera::CancelPlacement);
-        }
-    }
-}
 
