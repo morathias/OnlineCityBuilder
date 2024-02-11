@@ -228,8 +228,8 @@ void AStreetBuilder::CalculateFacesForStreet(Street* street, int index /*= 0*/)
 	street->vertices.Add(currentStreetVertTopRight);
 
 	street->uvs.Add(FVector2D(0, 0));
-	street->uvs.Add(FVector2D(0, 1));
 	street->uvs.Add(FVector2D(1, 0));
+	street->uvs.Add(FVector2D(0, 1));
 	street->uvs.Add(FVector2D(1, 1));
 
 	//Triangle1
