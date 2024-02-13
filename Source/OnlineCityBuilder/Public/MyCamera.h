@@ -8,6 +8,7 @@
 
 
 class AStreetBuilder;
+class AZoneBuilder;
 
 UCLASS()
 class ONLINECITYBUILDER_API AMyCamera : public APawn
@@ -34,6 +35,7 @@ protected:
 
 private:
 	void CalculateCurrentSpeed();
+	void GetStreetBordersForZone();
 
 	UPROPERTY(EditAnywhere, Category = "Road Editing")
 	float rayLength = 10000;
@@ -53,10 +55,14 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	FVector2D verticalLimit;
 
+	UPROPERTY(EditAnywhere, Category = "Zone Editing")
+	UMaterialInterface* zoneMaterial;
+
 	FVector movementDir;
 	FVector targetPos;
 
 	float currentSpeed;
 
 	AStreetBuilder* streetBuilder;
+	AZoneBuilder* zoneBuilder;
 };

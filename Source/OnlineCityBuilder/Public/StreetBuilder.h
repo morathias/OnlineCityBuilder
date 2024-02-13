@@ -26,7 +26,18 @@ public:
 	void FinishRoad();
 	void CancelRoad();
 
+	TArray<FVector> GetRightBorder();
+	TArray<FVector> GetRightBorderNormals();
+
+	TArray<FVector> GetLeftBorder();
+	TArray<FVector> GetLeftBorderNormals();
+
+
 	void SetMaterial(UMaterialInterface* material);
+
+	DECLARE_DELEGATE(StreetPlaced);
+
+	StreetPlaced streetPlacedDelegate;
 
 protected:
 	// Called when the game starts or when spawned

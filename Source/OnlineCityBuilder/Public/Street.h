@@ -37,6 +37,12 @@ public:
 	TArray<FVector*> GetVerticesForNode(const Node* node);
 	TArray<int> GetIndecesForNode(const Node* node);
 
+	TArray<FVector> GetRightEdge();
+	TArray<FVector> GetRightEdgeNormals();
+
+	TArray<FVector> GetLeftEdge();
+	TArray<FVector> GetLeftEdgeNormals();
+
 
 	float width = 1000;
 

@@ -141,3 +141,54 @@ TArray<int> Street::GetIndecesForNode(const Node* node)
 	}
 	return selectedIndeces;
 }
+
+//Index 0 is bottom vertex
+TArray<FVector> Street::GetRightEdge()
+{
+	TArray<FVector> selectedVertices;
+
+	selectedVertices.Add(vertices[1]);
+	selectedVertices.Add(vertices[3]);
+
+	return selectedVertices;
+}
+TArray<FVector> Street::GetRightEdgeNormals()
+{
+	TArray<FVector> normals;
+
+	FVector startNormal = vertices[1] - (startNode->position + FVector::UpVector * vertices[1].Z);
+	startNormal.Normalize();
+
+	FVector endNormal = vertices[3] - (endNode->position + FVector::UpVector * vertices[3].Z);
+	endNormal.Normalize();
+
+	normals.Add(startNormal);
+	normals.Add(endNormal);
+
+	return normals;
+}
+
+TArray<FVector> Street::GetLeftEdge()
+{
+	TArray<FVector> selectedVertices;
+
+	selectedVertices.Add(vertices[0]);
+	selectedVertices.Add(vertices[2]);
+
+	return selectedVertices;
+}
+TArray<FVector> Street::GetLeftEdgeNormals()
+{
+	TArray<FVector> normals;
+
+	FVector startNormal = vertices[0] - (startNode->position + FVector::UpVector * vertices[0].Z);
+	startNormal.Normalize();
+
+	FVector endNormal = vertices[2] - (endNode->position + FVector::UpVector * vertices[2].Z);
+	endNormal.Normalize();
+
+	normals.Add(startNormal);
+	normals.Add(endNormal);
+
+	return normals;
+}

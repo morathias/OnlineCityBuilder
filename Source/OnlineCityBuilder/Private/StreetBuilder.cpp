@@ -157,6 +157,8 @@ void AStreetBuilder::FinishRoad()
 	currentStreet = nullptr;
 
 	CalculateMesh();
+
+	streetPlacedDelegate.ExecuteIfBound();
 }
 
 void AStreetBuilder::CancelRoad() 
@@ -578,4 +580,24 @@ void AStreetBuilder::SplitStreet(Street* streetToSplit, Street::Node* splitNode)
 	MarkNodeAsDirty(splitNode);
 	MarkNodeAsDirty(oldEndNode);
 }
+
+TArray<FVector> AStreetBuilder::GetRightBorder() 
+{
+	return streets[streets.Num() - 1]->GetRightEdge();
+}
+TArray<FVector> AStreetBuilder::GetRightBorderNormals() 
+{
+	return streets[streets.Num() - 1]->GetRightEdgeNormals();
+}
+
+
+TArray<FVector> AStreetBuilder::GetLeftBorder() 
+{
+	return streets[streets.Num() - 1]->GetLeftEdge();
+}
+TArray<FVector> AStreetBuilder::GetLeftBorderNormals() 
+{
+	return streets[streets.Num() - 1]->GetLeftEdgeNormals();
+}
+
 

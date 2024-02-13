@@ -5,6 +5,7 @@
 
 #include "StreetBuilder.h"
 #include "MyCityBuilderGameMode.h"
+#include "ZoneBuilder.h"
 
 // Sets default values
 AMyCamera::AMyCamera()
@@ -24,6 +25,12 @@ void AMyCamera::BeginPlay()
     streetBuilder = GetWorld()->SpawnActor<AStreetBuilder>(AStreetBuilder::StaticClass());
     streetBuilder->SetOwner(this);
     streetBuilder->SetMaterial(roadMaterial);
+    streetBuilder->streetPlacedDelegate.BindUObject(this, &AMyCamera::GetStreetBordersForZone);
+
+    zoneBuilder = GetWorld()->SpawnActor<AZoneBuilder>(AZoneBuilder::StaticClass());
+    zoneBuilder->SetOwner(this);
+    zoneBuilder->SetMaterial(zoneMaterial);
+
 
     SetActorRotation(FRotator(-45, 0, 0));
 }
@@ -108,4 +115,10 @@ void AMyCamera::Rotate(FVector2D mouseDelta)
     FRotator targetRot = FRotator(pitch, yaw, currentRot.Roll);
 
     SetActorRotation(targetRot);
+}
+
+void AMyCamera::GetStreetBordersForZone() 
+{
+    zoneBuilder->GenerateZone(streetBuilder->GetLeftBorder(), streetBuilder->GetLeftBorderNormals());
+    zoneBuilder->GenerateZone(streetBuilder->GetRightBorder(), streetBuilder->GetRightBorderNormals());
 }
