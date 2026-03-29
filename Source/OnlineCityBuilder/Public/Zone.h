@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 
+class LandPlot;
+
 class ONLINECITYBUILDER_API Zone
 {
 public:
@@ -18,6 +20,10 @@ public:
 
 
 private:
+	void GenerateLandPlots();
+
 	TArray<FVector> vertices;
 	TArray<int> indices;
+
+	TArray<LandPlot*> landPlots;
 };

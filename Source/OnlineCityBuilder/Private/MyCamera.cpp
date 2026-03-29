@@ -31,7 +31,6 @@ void AMyCamera::BeginPlay()
     zoneBuilder->SetOwner(this);
     zoneBuilder->SetMaterial(zoneMaterial);
 
-
     SetActorRotation(FRotator(-45, 0, 0));
 }
 

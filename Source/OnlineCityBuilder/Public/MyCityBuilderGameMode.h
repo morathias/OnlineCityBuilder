@@ -6,9 +6,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "MyCityBuilderGameMode.generated.h"
 
-/**
- * 
- */
+class ABuilding;
+
 UCLASS()
 class ONLINECITYBUILDER_API AMyCityBuilderGameMode : public AGameModeBase
 {
@@ -18,12 +17,12 @@ public:
 	AMyCityBuilderGameMode();
 	~AMyCityBuilderGameMode();
 
-	
-
 	UFUNCTION(BlueprintCallable)
 	void IsEditingRoad(bool isEditing);
 
 	bool isEditingRoad = false;
+
+	UPROPERTY(EditAnywhere) TArray<TSubclassOf<class ABuilding>> buildingTypes;
 };
 
 UENUM()

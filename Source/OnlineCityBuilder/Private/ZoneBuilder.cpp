@@ -52,7 +52,7 @@ void AZoneBuilder::CalculateMesh()
 		meshVertices.Append(zone->GetVertices());
 	}
 
-	mesh->CreateMeshSection(0, meshVertices, meshIndices, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), true);
+	mesh->CreateMeshSection(0, meshVertices, meshIndices, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
 }
 
 
