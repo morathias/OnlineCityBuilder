@@ -76,32 +76,32 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 	bottomLeft = area[0] - GetActorLocation();
 	bottomLeft.Normalize();
 	bottomLeft *= sqrArea.Length();
-	bottomLeft += GetActorLocation();
+	//bottomLeft += GetActorLocation();
 
 	bottomRight = area[1] - GetActorLocation();
 	bottomRight.Normalize();
 	bottomRight *= sqrArea.Length();
-	bottomRight += GetActorLocation();
+	//bottomRight += GetActorLocation();
 
 	topLeft = area[2] - GetActorLocation();
 	topLeft.Normalize();
 	topLeft *= sqrArea.Length();
-	topLeft += GetActorLocation();
+	//topLeft += GetActorLocation();
 
 	topRight = area[3] - GetActorLocation();
 	topRight.Normalize();
 	topRight *= sqrArea.Length();
-	topRight += GetActorLocation();
+	//topRight += GetActorLocation();
 
 	vertices.Add(bottomLeft);
 	vertices.Add(bottomRight);
 	vertices.Add(topRight);
 	vertices.Add(topLeft);
 
-	DrawDebugSphere(GetWorld(), bottomLeft, 100, 4, FColor::Black, true);
+	/*DrawDebugSphere(GetWorld(), bottomLeft, 100, 4, FColor::Black, true);
 	DrawDebugSphere(GetWorld(), bottomRight, 100, 4, FColor::Black, true);
 	DrawDebugSphere(GetWorld(), topLeft, 100, 4, FColor::Black, true);
-	DrawDebugSphere(GetWorld(), topRight, 100, 4, FColor::Black, true);
+	DrawDebugSphere(GetWorld(), topRight, 100, 4, FColor::Black, true);*/
 
 	//ceiling verts
 	vertices.Add(bottomLeft + FVector::UpVector * dimensions.Z);
@@ -109,10 +109,10 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 	vertices.Add(topRight + FVector::UpVector * dimensions.Z);
 	vertices.Add(topLeft + FVector::UpVector * dimensions.Z);
 
-	DrawDebugSphere(GetWorld(), vertices[4], 100, 4, FColor::Black, true);
+	/*DrawDebugSphere(GetWorld(), vertices[4], 100, 4, FColor::Black, true);
 	DrawDebugSphere(GetWorld(), vertices[5], 100, 4, FColor::Black, true);
 	DrawDebugSphere(GetWorld(), vertices[6], 100, 4, FColor::Black, true);
-	DrawDebugSphere(GetWorld(), vertices[7], 100, 4, FColor::Black, true);
+	DrawDebugSphere(GetWorld(), vertices[7], 100, 4, FColor::Black, true);*/
 
 	TArray<FVector> buildingVerts;
 	TArray<int32> buildingIndices;
@@ -128,27 +128,25 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 			int32 windowsAmount = FMath::Floor(dir.Length() / 100);
 			dir.Normalize();
 
-			FQuat quat = FQuat(FVector::UpVector, 270 * side);
-			FRotator rot = FRotator(quat);
+			FRotator rot = FRotator(FQuat::MakeFromEuler(FVector(0, 0, -90 * side)));
 
-			for (int32 j = 0; j < windowsAmount; j++)
+			for (int16 j = 0; j < windowsAmount; j++)
 			{
 				FTransform transform = FTransform(rot, vertices[side] + dir * 100 * j + FVector::UpVector * MAX_STORY_HEIGHT * storey, FVector::One());
-				TArray<FVector> transformedWindowVerts;
 				for (uint32 k = 0; k < windowVB.GetNumVertices(); k++)
 				{
 					FVector localMeshVert = (FVector)windowVB.VertexPosition(k);
-					transformedWindowVerts.Add(transform.TransformPosition(localMeshVert));
-					DrawDebugSphere(GetWorld(), transformedWindowVerts[k], 10, 4, FColor::Blue, true);
+					buildingVerts.Add(transform.TransformPosition(localMeshVert));
+					//DrawDebugSphere(GetWorld(), transform.TransformPosition(localMeshVert) + GetActorLocation(), 10, 4, FColor::Blue, true);
+					//DrawDebugString(GetWorld(), transform.TransformPosition(localMeshVert) + GetActorLocation(), TEXT(""+ FString::FromInt(buildingVerts.Num() + k)), (AActor*)0, FColor::Black);
 				}
 
 				TArray<uint32> shiftedIndices;
-				for (int32 k = 0; k < windowIB.GetNumIndices(); k++)
+				for (int16 k = 0; k < windowIB.GetNumIndices(); k++)
 				{
-					shiftedIndices.Add(windowIB.GetIndex(k) + buildingIndices.Num());
+					shiftedIndices.Add(windowIB.GetIndex(k) + FMath::Clamp(buildingIndices.Num() - 2 * (buildingIndices.Num() / 6), 0, buildingIndices.Num()));
 				}
 
-				buildingVerts.Append(transformedWindowVerts);
 				buildingIndices.Append(shiftedIndices);
 			}
 		}

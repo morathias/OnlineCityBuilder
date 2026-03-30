@@ -119,5 +119,5 @@ void AMyCamera::Rotate(FVector2D mouseDelta)
 void AMyCamera::GetStreetBordersForZone() 
 {
     zoneBuilder->GenerateZone(streetBuilder->GetLeftBorder(), streetBuilder->GetLeftBorderNormals());
-    //zoneBuilder->GenerateZone(streetBuilder->GetRightBorder(), streetBuilder->GetRightBorderNormals());
+    zoneBuilder->GenerateZone(streetBuilder->GetRightBorder(), streetBuilder->GetRightBorderNormals());
 }
