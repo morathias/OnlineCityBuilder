@@ -55,8 +55,8 @@ TArray<int> Zone::GetIndices()
 
 void Zone::GenerateLandPlots() 
 {
-	int32 plots = FMath::RandRange(4, 6);
-	//int32 plots = 2;
+	//int32 plots = FMath::RandRange(4, 6);
+	int32 plots = 1;
 
 	TArray<FVector*> border;
 	border.Add(&vertices[0]);

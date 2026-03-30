@@ -30,8 +30,6 @@ protected:
 private:	
 	void Building(float dt);
 	void CalculateMesh(TArray<FVector> area, FVector dimensions);
-	TArray<FVector> GetVerticesFromStaticMesh(const UStaticMesh& staticMesh);
-	TArray<uint32> GetIndecisFromStaticMesh(const UStaticMesh& staticMesh);
 
 
 	const float MAX_STORY_HEIGHT = 3.65 * 100;

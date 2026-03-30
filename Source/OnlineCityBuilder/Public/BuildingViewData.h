@@ -14,4 +14,5 @@ public:
 	UPROPERTY(EditAnywhere) UStaticMesh* ceilingBorderMesh;
 	UPROPERTY(EditAnywhere) UStaticMesh* ceilingCornerMesh;
 	UPROPERTY(EditAnywhere) UStaticMesh* ceilingFloorMesh;
+	UPROPERTY(EditAnywhere) UMaterial*	 mat;
 };
