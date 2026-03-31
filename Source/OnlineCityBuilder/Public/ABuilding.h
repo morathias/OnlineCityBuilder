@@ -30,6 +30,7 @@ protected:
 private:	
 	void Building(float dt);
 	void CalculateMesh(TArray<FVector> area, FVector dimensions);
+	float AngleBetweenVectors(FVector Vec1, FVector Vec2);
 
 
 	const float MAX_STORY_HEIGHT = 3.65 * 100;

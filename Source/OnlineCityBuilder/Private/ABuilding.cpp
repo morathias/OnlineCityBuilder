@@ -52,7 +52,7 @@ void ABuilding::StartBuilding(TArray<FVector> area)
 
 	SetActorLocation(areaCenter);
 
-	DrawDebugSphere(GetWorld(), GetActorLocation(), 300, 4, FColor::Cyan, true);
+	//DrawDebugSphere(GetWorld(), GetActorLocation(), 300, 4, FColor::Cyan, true);
 
 	CalculateMesh(area, FVector(dimensions.X, dimensions.Y, height));
 }
@@ -66,6 +66,25 @@ void ABuilding::Building(float dt)
 		PrimaryActorTick.bCanEverTick = false;
 		onBuildingConstructed.ExecuteIfBound();
 	}
+}
+
+float ABuilding::AngleBetweenVectors(FVector Vec1, FVector Vec2)
+{
+	// Normalize vectors to get direction only (magnitude becomes 1)
+	Vec1.Normalize();
+	Vec2.Normalize();
+
+	// Calculate the dot product of the two normalized vectors
+	float DotProduct = FVector::DotProduct(Vec1, Vec2);
+
+	// Calculate the angle in radians using Acos.
+	// The DotProduct is the cosine of the angle.
+	float AngleRadians = FMath::Acos(DotProduct);
+
+	// Optional: Convert radians to degrees
+	float AngleDegrees = FMath::RadiansToDegrees(AngleRadians);
+
+	return AngleDegrees; // Or return AngleRadians if you need radians
 }
 
 void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
@@ -116,27 +135,47 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 
 	TArray<FVector> buildingVerts;
 	TArray<int32> buildingIndices;
+	TArray<FVector> buildingNormals;
 
 	const FPositionVertexBuffer& windowVB = viewData->windowMesh->GetRenderData()->GetCurrentFirstLOD(0)->VertexBuffers.PositionVertexBuffer;
 	const FRawStaticIndexBuffer& windowIB = viewData->windowMesh->GetRenderData()->GetCurrentFirstLOD(0)->IndexBuffer;
+	const FStaticMeshVertexBuffer& windowSVB = viewData->windowMesh->GetRenderData()->GetCurrentFirstLOD(0)->VertexBuffers.StaticMeshVertexBuffer;
+
+	FVector streetDir = bottomRight - bottomLeft;
+	streetDir.Normalize();
+
+	FVector buildingDir = bottomLeft - topLeft;
+	buildingDir.Normalize();
+
+	SetActorRotation(buildingDir.Rotation());
+
+	for (int8 i = 0; i < vertices.Num(); i++)
+	{
+		vertices[i] = GetActorTransform().TransformVector(vertices[i]);
+		//DrawDebugSphere(GetWorld(), vertices[i] + GetActorLocation(), 20, 4, FColor::Red, true);
+	}
 
 	for (int16 storey = 0; storey < storeys; storey++)
 	{
 		for (int16 side = 0; side < 4; side++)
 		{
 			FVector dir = (side != 3 ? vertices[side + 1] : vertices[0]) - vertices[side];
-			int32 windowsAmount = FMath::Floor(dir.Length() / 100);
-			dir.Normalize();
 
-			FRotator rot = FRotator(FQuat::MakeFromEuler(FVector(0, 0, -90 * side)));
+			int32 windowsAmount = FMath::CeilToInt32(dir.Length() / 100);
+			float wallSize = windowsAmount * 100;
+			float scaleAmount = dir.Length() / wallSize;
+ 			dir.Normalize();
+
+			FRotator rot = FRotator(dir.RotateAngleAxis(90 * FVector::DotProduct(GetActorRightVector(), streetDir), FVector::UpVector).Rotation());
 
 			for (int16 j = 0; j < windowsAmount; j++)
 			{
-				FTransform transform = FTransform(rot, vertices[side] + dir * 100 * j + FVector::UpVector * MAX_STORY_HEIGHT * storey, FVector::One());
+				FTransform transform = FTransform(rot, vertices[side] + dir * 100 * scaleAmount * j + FVector::UpVector * MAX_STORY_HEIGHT * storey, FVector(1, scaleAmount, 1));
 				for (uint32 k = 0; k < windowVB.GetNumVertices(); k++)
 				{
 					FVector localMeshVert = (FVector)windowVB.VertexPosition(k);
 					buildingVerts.Add(transform.TransformPosition(localMeshVert));
+					buildingNormals.Add(transform.TransformVector((FVector)windowSVB.VertexTangentZ(k)));
 					//DrawDebugSphere(GetWorld(), transform.TransformPosition(localMeshVert) + GetActorLocation(), 10, 4, FColor::Blue, true);
 					//DrawDebugString(GetWorld(), transform.TransformPosition(localMeshVert) + GetActorLocation(), TEXT(""+ FString::FromInt(buildingVerts.Num() + k)), (AActor*)0, FColor::Black);
 				}
@@ -152,6 +191,7 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 		}
 	}
 
-	buildingMesh->CreateMeshSection(0, buildingVerts, buildingIndices, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+	buildingMesh->CreateMeshSection(0, buildingVerts, buildingIndices, buildingNormals, TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
 	buildingMesh->SetMaterial(0, viewData->mat);
 }
+

@@ -16,10 +16,10 @@ LandPlot::LandPlot(TArray<FVector*> startingBorder, FVector pathDir)
 	vertices.Add(*startingBorder[1]);
 	vertices.Add(endExtrudedVertex);
 
-	DrawDebugSphere(GWorld, vertices[0], 300, 4, FColor::Red, true);
+	/*DrawDebugSphere(GWorld, vertices[0], 300, 4, FColor::Red, true);
 	DrawDebugSphere(GWorld, vertices[1], 300, 4, FColor::Red, true);
 	DrawDebugSphere(GWorld, vertices[2], 300, 4, FColor::Red, true);
-	DrawDebugSphere(GWorld, vertices[3], 300, 4, FColor::Red, true);
+	DrawDebugSphere(GWorld, vertices[3], 300, 4, FColor::Red, true);*/
 
 	ConstructBuilding();
 }
@@ -45,13 +45,13 @@ void LandPlot::ConstructBuilding()
 
 	if (gameMode != nullptr) 
 	{
-		/*DrawDebugSphere(GWorld, vertices[0], 300, 4, FColor::Black, true);
-		DrawDebugSphere(GWorld, vertices[1], 300, 4, FColor::Black, true);
-		DrawDebugSphere(GWorld, vertices[2], 300, 4, FColor::Black, true);
-		DrawDebugSphere(GWorld, vertices[3], 300, 4, FColor::Black, true);*/
+		//TODO: find a way to remove this debug, removing it breacks everything for some reason
+		DrawDebugSphere(GWorld, vertices[0], 300, 4, FColor::Black, false);
+		//DrawDebugSphere(GWorld, vertices[1], 300, 4, FColor::Black, true);
+		//DrawDebugSphere(GWorld, vertices[2], 300, 4, FColor::Black, true);
+		//DrawDebugSphere(GWorld, vertices[3], 300, 4, FColor::Black, true);
 
 		building = GWorld->SpawnActor<ABuilding>(gameMode->buildingTypes[0]);
-		//DrawDebugSphere(GEngine->GetWorld(), building->GetActorLocation(), 200, 4, FColor::Blue, true);
 		building->StartBuilding(vertices);
 	}
 }

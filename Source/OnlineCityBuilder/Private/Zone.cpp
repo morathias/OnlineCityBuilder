@@ -55,7 +55,7 @@ TArray<int> Zone::GetIndices()
 
 void Zone::GenerateLandPlots() 
 {
-	int32 plots = FMath::RandRange(4, 6);
+	int32 plots = FMath::RandRange(2, 6);
 	//int32 plots = 1;
 
 	TArray<FVector*> border;
