@@ -112,6 +112,14 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 	topRight *= sqrArea.Length();
 	//topRight += GetActorLocation();
 
+	FVector streetDir = bottomRight - bottomLeft;
+	streetDir.Normalize();
+
+	FVector buildingDir = bottomLeft - topLeft;
+	buildingDir.Normalize();
+
+	SetActorRotation(buildingDir.Rotation());
+
 	vertices.Add(bottomLeft);
 	vertices.Add(bottomRight);
 	vertices.Add(topRight);
@@ -141,19 +149,23 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 	const FRawStaticIndexBuffer& windowIB = viewData->windowMesh->GetRenderData()->GetCurrentFirstLOD(0)->IndexBuffer;
 	const FStaticMeshVertexBuffer& windowSVB = viewData->windowMesh->GetRenderData()->GetCurrentFirstLOD(0)->VertexBuffers.StaticMeshVertexBuffer;
 
-	FVector streetDir = bottomRight - bottomLeft;
-	streetDir.Normalize();
-
-	FVector buildingDir = bottomLeft - topLeft;
-	buildingDir.Normalize();
-
-	SetActorRotation(buildingDir.Rotation());
-
 	for (int8 i = 0; i < vertices.Num(); i++)
 	{
 		vertices[i] = GetActorTransform().TransformVector(vertices[i]);
-		//DrawDebugSphere(GetWorld(), vertices[i] + GetActorLocation(), 20, 4, FColor::Red, true);
+		DrawDebugSphere(GetWorld(), vertices[i] + GetActorLocation(), 20, 4, FColor::Red, true);
 	}
+
+	/*DrawDebugDirectionalArrow(GetWorld(), vertices[0] + GetActorLocation(), vertices[1] + GetActorLocation(), 50, FColor::Black, true);
+	DrawDebugDirectionalArrow(GetWorld(), vertices[1] + GetActorLocation(), vertices[2] + GetActorLocation(), 50, FColor::Black, true);
+	DrawDebugDirectionalArrow(GetWorld(), vertices[2] + GetActorLocation(), vertices[3] + GetActorLocation(), 50, FColor::Black, true);
+	DrawDebugDirectionalArrow(GetWorld(), vertices[3] + GetActorLocation(), vertices[0] + GetActorLocation(), 50, FColor::Black, true);
+
+	DrawDebugString(GetWorld(), vertices[0] + GetActorLocation(), TEXT("bottom left"), (AActor*)0, FColor::Black);
+	DrawDebugString(GetWorld(), vertices[1] + GetActorLocation(), TEXT("bottom right"), (AActor*)0, FColor::Black);
+	DrawDebugString(GetWorld(), vertices[2] + GetActorLocation(), TEXT("top right"), (AActor*)0, FColor::Black);
+	DrawDebugString(GetWorld(), vertices[3] + GetActorLocation(), TEXT("top left"), (AActor*)0, FColor::Black);*/
+
+
 
 	for (int16 storey = 0; storey < storeys; storey++)
 	{
@@ -166,7 +178,8 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 			float scaleAmount = dir.Length() / wallSize;
  			dir.Normalize();
 
-			FRotator rot = FRotator(dir.RotateAngleAxis(90 * FVector::DotProduct(GetActorRightVector(), streetDir), FVector::UpVector).Rotation());
+			//FRotator rot = FRotator(dir.RotateAngleAxis(90 * FVector::DotProduct(GetActorRightVector(), streetDir), FVector::UpVector).Rotation());
+			FRotator rot = FRotator(dir.Rotation());
 
 			for (int16 j = 0; j < windowsAmount; j++)
 			{
