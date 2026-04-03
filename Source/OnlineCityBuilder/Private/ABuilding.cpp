@@ -165,8 +165,6 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 	DrawDebugString(GetWorld(), vertices[2] + GetActorLocation(), TEXT("top right"), (AActor*)0, FColor::Black);
 	DrawDebugString(GetWorld(), vertices[3] + GetActorLocation(), TEXT("top left"), (AActor*)0, FColor::Black);*/
 
-
-
 	for (int16 storey = 0; storey < storeys; storey++)
 	{
 		for (int16 side = 0; side < 4; side++)
@@ -201,6 +199,47 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 
 				buildingIndices.Append(shiftedIndices);
 			}
+		}
+	}
+
+	const FPositionVertexBuffer& ceilingBorderVB = viewData->ceilingBorderMesh->GetRenderData()->GetCurrentFirstLOD(0)->VertexBuffers.PositionVertexBuffer;
+	const FRawStaticIndexBuffer& ceilingBorderIB = viewData->ceilingBorderMesh->GetRenderData()->GetCurrentFirstLOD(0)->IndexBuffer;
+	const FStaticMeshVertexBuffer& ceilingBorderSVB = viewData->ceilingBorderMesh->GetRenderData()->GetCurrentFirstLOD(0)->VertexBuffers.StaticMeshVertexBuffer;
+
+	for (int16 side = 4; side < 8; side++)
+	{
+		FVector dir = (side != 7 ? vertices[side + 1] : vertices[4]) - vertices[side];
+
+		int32 bordersAmount = FMath::CeilToInt32(dir.Length() / 100);
+		float borderSize = bordersAmount * 100;
+		float scaleAmount = dir.Length() / borderSize;
+		dir.Normalize();
+
+		FRotator rot = FRotator(dir.Rotation());
+
+		int sideVertsAmount = buildingVerts.Num();
+
+		for (int16 j = 0; j < bordersAmount; j++)
+		{
+			TArray<uint32> shiftedIndices;
+			for (int16 k = 0; k < ceilingBorderIB.GetNumIndices(); k++)
+			{
+				shiftedIndices.Add(ceilingBorderIB.GetIndex(k) + ceilingBorderVB.GetNumVertices() * j + sideVertsAmount);
+			}
+			buildingIndices.Append(shiftedIndices);
+			
+			FTransform transform = FTransform(rot, vertices[side] + dir * 100 * scaleAmount * j, FVector(1, scaleAmount, 1));
+			for (uint32 k = 0; k < ceilingBorderVB.GetNumVertices(); k++)
+			{
+				FVector localMeshVert = (FVector)ceilingBorderVB.VertexPosition(k);
+				buildingVerts.Add(transform.TransformPosition(localMeshVert));
+				buildingNormals.Add(transform.TransformVector((FVector)ceilingBorderSVB.VertexTangentZ(k)));
+				//DrawDebugSphere(GetWorld(), transform.TransformPosition(localMeshVert) + GetActorLocation(), 10, 4, FColor::Blue, true);
+				//DrawDebugString(GetWorld(), transform.TransformPosition(localMeshVert) + GetActorLocation(), TEXT(""+ FString::FromInt(buildingVerts.Num() + k)), (AActor*)0, FColor::Black);
+			}
+
+			
+
 		}
 	}
 
