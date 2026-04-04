@@ -147,8 +147,8 @@ TArray<FVector> Street::GetRightEdge()
 {
 	TArray<FVector> selectedVertices;
 
-	selectedVertices.Add(vertices[1]);
 	selectedVertices.Add(vertices[3]);
+	selectedVertices.Add(vertices[1]);
 
 	return selectedVertices;
 }

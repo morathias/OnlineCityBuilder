@@ -215,7 +215,9 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 		float scaleAmount = dir.Length() / borderSize;
 		dir.Normalize();
 
-		FRotator rot = FRotator(dir.Rotation());
+		//FRotator rot = FRotator(dir.Rotation());
+		FRotator rot = FRotator(dir.RotateAngleAxis(90 * FVector::DotProduct(GetActorRightVector(), streetDir), FVector::UpVector).Rotation());
+
 
 		int sideVertsAmount = buildingVerts.Num();
 
@@ -237,9 +239,51 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 				//DrawDebugSphere(GetWorld(), transform.TransformPosition(localMeshVert) + GetActorLocation(), 10, 4, FColor::Blue, true);
 				//DrawDebugString(GetWorld(), transform.TransformPosition(localMeshVert) + GetActorLocation(), TEXT(""+ FString::FromInt(buildingVerts.Num() + k)), (AActor*)0, FColor::Black);
 			}
+		}
+	}
 
-			
+	const FPositionVertexBuffer& ceilingFloorVB = viewData->ceilingFloorMesh->GetRenderData()->GetCurrentFirstLOD(0)->VertexBuffers.PositionVertexBuffer;
+	const FRawStaticIndexBuffer& ceilingFloorIB = viewData->ceilingFloorMesh->GetRenderData()->GetCurrentFirstLOD(0)->IndexBuffer;
+	const FStaticMeshVertexBuffer& ceilingFloorSVB = viewData->ceilingFloorMesh->GetRenderData()->GetCurrentFirstLOD(0)->VertexBuffers.StaticMeshVertexBuffer;
 
+	FVector rowDir = (bottomLeft - bottomRight);
+	FVector columnDir = (bottomLeft - topLeft);
+
+	float rowSize = rowDir.Length();
+	float columnSize = columnDir.Length();
+	int16 rowAmount = FMath::CeilToInt(columnDir.Length() / 100);
+	int16 columnAmount = FMath::CeilToInt32(rowDir.Length() / 100);
+	rowDir.Normalize();
+	columnDir.Normalize();
+
+	for (int16 row = 0; row < rowAmount; row++)
+	{
+		float scaleAmountColumn = rowSize / (columnAmount * 100);
+		float scaleAmountRow = columnSize / (rowAmount * 100);
+
+		FRotator rot = FRotator(rowDir.Rotation());
+
+		int sideVertsAmount = buildingVerts.Num();
+
+		for (int16 column = 0; column < columnAmount; column++)
+		{
+			TArray<uint32> shiftedIndices;
+			for (int16 k = 0; k < ceilingFloorIB.GetNumIndices(); k++)
+			{
+				shiftedIndices.Add(ceilingFloorIB.GetIndex(k) + ceilingFloorVB.GetNumVertices() * column + sideVertsAmount);
+			}
+			buildingIndices.Append(shiftedIndices);
+
+			FVector origin = vertices[4];
+			FTransform transform = FTransform(rot, origin + rowDir * 100 * scaleAmountColumn * column + columnDir * 100 * scaleAmountRow * row, FVector(scaleAmountColumn, scaleAmountRow, 1));
+			for (uint32 k = 0; k < ceilingFloorVB.GetNumVertices(); k++)
+			{
+				FVector localMeshVert = (FVector)ceilingFloorVB.VertexPosition(k);
+				buildingVerts.Add(transform.TransformPosition(localMeshVert));
+				buildingNormals.Add(transform.TransformVector((FVector)ceilingFloorSVB.VertexTangentZ(k)));
+				//DrawDebugSphere(GetWorld(), transform.TransformPosition(localMeshVert) + GetActorLocation(), 10, 4, FColor::Blue, true);
+				//DrawDebugString(GetWorld(), transform.TransformPosition(localMeshVert) + GetActorLocation(), TEXT(""+ FString::FromInt(buildingVerts.Num() + k)), (AActor*)0, FColor::Black);
+			}
 		}
 	}
 
