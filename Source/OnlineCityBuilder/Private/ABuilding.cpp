@@ -68,24 +68,7 @@ void ABuilding::Building(float dt)
 	}
 }
 
-float ABuilding::AngleBetweenVectors(FVector Vec1, FVector Vec2)
-{
-	// Normalize vectors to get direction only (magnitude becomes 1)
-	Vec1.Normalize();
-	Vec2.Normalize();
 
-	// Calculate the dot product of the two normalized vectors
-	float DotProduct = FVector::DotProduct(Vec1, Vec2);
-
-	// Calculate the angle in radians using Acos.
-	// The DotProduct is the cosine of the angle.
-	float AngleRadians = FMath::Acos(DotProduct);
-
-	// Optional: Convert radians to degrees
-	float AngleDegrees = FMath::RadiansToDegrees(AngleRadians);
-
-	return AngleDegrees; // Or return AngleRadians if you need radians
-}
 
 void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 {
@@ -151,19 +134,19 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 
 	for (int8 i = 0; i < vertices.Num(); i++)
 	{
-		vertices[i] = GetActorTransform().TransformVector(vertices[i]);
+		//vertices[i] = GetActorTransform().TransformVector(vertices[i]);
 		DrawDebugSphere(GetWorld(), vertices[i] + GetActorLocation(), 20, 4, FColor::Red, true);
 	}
 
 	/*DrawDebugDirectionalArrow(GetWorld(), vertices[0] + GetActorLocation(), vertices[1] + GetActorLocation(), 50, FColor::Black, true);
 	DrawDebugDirectionalArrow(GetWorld(), vertices[1] + GetActorLocation(), vertices[2] + GetActorLocation(), 50, FColor::Black, true);
 	DrawDebugDirectionalArrow(GetWorld(), vertices[2] + GetActorLocation(), vertices[3] + GetActorLocation(), 50, FColor::Black, true);
-	DrawDebugDirectionalArrow(GetWorld(), vertices[3] + GetActorLocation(), vertices[0] + GetActorLocation(), 50, FColor::Black, true);
+	DrawDebugDirectionalArrow(GetWorld(), vertices[3] + GetActorLocation(), vertices[0] + GetActorLocation(), 50, FColor::Black, true);*/
 
 	DrawDebugString(GetWorld(), vertices[0] + GetActorLocation(), TEXT("bottom left"), (AActor*)0, FColor::Black);
 	DrawDebugString(GetWorld(), vertices[1] + GetActorLocation(), TEXT("bottom right"), (AActor*)0, FColor::Black);
 	DrawDebugString(GetWorld(), vertices[2] + GetActorLocation(), TEXT("top right"), (AActor*)0, FColor::Black);
-	DrawDebugString(GetWorld(), vertices[3] + GetActorLocation(), TEXT("top left"), (AActor*)0, FColor::Black);*/
+	DrawDebugString(GetWorld(), vertices[3] + GetActorLocation(), TEXT("top left"), (AActor*)0, FColor::Black);
 
 	for (int16 storey = 0; storey < storeys; storey++)
 	{
@@ -246,8 +229,8 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 	const FRawStaticIndexBuffer& ceilingFloorIB = viewData->ceilingFloorMesh->GetRenderData()->GetCurrentFirstLOD(0)->IndexBuffer;
 	const FStaticMeshVertexBuffer& ceilingFloorSVB = viewData->ceilingFloorMesh->GetRenderData()->GetCurrentFirstLOD(0)->VertexBuffers.StaticMeshVertexBuffer;
 
-	FVector rowDir = (bottomLeft - bottomRight);
-	FVector columnDir = (bottomLeft - topLeft);
+	FVector rowDir = (bottomRight - bottomLeft);
+	FVector columnDir = (topLeft - bottomLeft);
 
 	float rowSize = rowDir.Length();
 	float columnSize = columnDir.Length();
@@ -256,7 +239,7 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 	rowDir.Normalize();
 	columnDir.Normalize();
 
-	for (int16 row = 0; row < rowAmount; row++)
+	for (int16 row = 1; row < rowAmount; row++)
 	{
 		float scaleAmountColumn = rowSize / (columnAmount * 100);
 		float scaleAmountRow = columnSize / (rowAmount * 100);
