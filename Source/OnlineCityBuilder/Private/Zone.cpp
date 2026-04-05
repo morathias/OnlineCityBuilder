@@ -53,6 +53,25 @@ TArray<int> Zone::GetIndices()
 	return indices;
 }
 
+float Zone::AngleBetweenVectors(FVector Vec1, FVector Vec2)
+{
+	// Normalize vectors to get direction only (magnitude becomes 1)
+	Vec1.Normalize();
+	Vec2.Normalize();
+
+	// Calculate the dot product of the two normalized vectors
+	float DotProduct = FVector::DotProduct(Vec1, Vec2);
+
+	// Calculate the angle in radians using Acos.
+	// The DotProduct is the cosine of the angle.
+	float AngleRadians = FMath::Acos(DotProduct);
+
+	// Optional: Convert radians to degrees
+	float AngleDegrees = FMath::RadiansToDegrees(AngleRadians);
+
+	return AngleDegrees; // Or return AngleRadians if you need radians
+}
+
 void Zone::GenerateLandPlots() 
 {
 	int32 plots = FMath::RandRange(2, 6);
@@ -65,6 +84,7 @@ void Zone::GenerateLandPlots()
 	FVector dir = vertices[2] - vertices[0];
 	float zoneLength = dir.Length();
 	dir.Normalize();
+
 	float plotWidth = (float)(zoneLength / plots);
 	
 	FVector pathDir = dir * plotWidth;

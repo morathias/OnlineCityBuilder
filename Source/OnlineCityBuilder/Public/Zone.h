@@ -21,6 +21,8 @@ public:
 
 private:
 	void GenerateLandPlots();
+	float AngleBetweenVectors(FVector Vec1, FVector Vec2);
+
 
 	TArray<FVector> vertices;
 	TArray<int> indices;

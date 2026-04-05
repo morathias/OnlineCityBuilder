@@ -101,7 +101,7 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 	FVector buildingDir = bottomLeft - topLeft;
 	buildingDir.Normalize();
 
-	SetActorRotation(buildingDir.Rotation());
+	//SetActorRotation(buildingDir.Rotation());
 
 	vertices.Add(bottomLeft);
 	vertices.Add(bottomRight);
@@ -135,7 +135,7 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 	for (int8 i = 0; i < vertices.Num(); i++)
 	{
 		//vertices[i] = GetActorTransform().TransformVector(vertices[i]);
-		DrawDebugSphere(GetWorld(), vertices[i] + GetActorLocation(), 20, 4, FColor::Red, true);
+		//DrawDebugSphere(GetWorld(), vertices[i] + GetActorLocation(), 20, 4, FColor::Red, true);
 	}
 
 	/*DrawDebugDirectionalArrow(GetWorld(), vertices[0] + GetActorLocation(), vertices[1] + GetActorLocation(), 50, FColor::Black, true);
@@ -143,10 +143,10 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 	DrawDebugDirectionalArrow(GetWorld(), vertices[2] + GetActorLocation(), vertices[3] + GetActorLocation(), 50, FColor::Black, true);
 	DrawDebugDirectionalArrow(GetWorld(), vertices[3] + GetActorLocation(), vertices[0] + GetActorLocation(), 50, FColor::Black, true);*/
 
-	DrawDebugString(GetWorld(), vertices[0] + GetActorLocation(), TEXT("bottom left"), (AActor*)0, FColor::Black);
-	DrawDebugString(GetWorld(), vertices[1] + GetActorLocation(), TEXT("bottom right"), (AActor*)0, FColor::Black);
-	DrawDebugString(GetWorld(), vertices[2] + GetActorLocation(), TEXT("top right"), (AActor*)0, FColor::Black);
-	DrawDebugString(GetWorld(), vertices[3] + GetActorLocation(), TEXT("top left"), (AActor*)0, FColor::Black);
+	//DrawDebugString(GetWorld(), vertices[0] + GetActorLocation(), TEXT("bottom left"), (AActor*)0, FColor::Black);
+	//DrawDebugString(GetWorld(), vertices[1] + GetActorLocation(), TEXT("bottom right"), (AActor*)0, FColor::Black);
+	//DrawDebugString(GetWorld(), vertices[2] + GetActorLocation(), TEXT("top right"), (AActor*)0, FColor::Black);
+	//DrawDebugString(GetWorld(), vertices[3] + GetActorLocation(), TEXT("top left"), (AActor*)0, FColor::Black);
 
 	for (int16 storey = 0; storey < storeys; storey++)
 	{
@@ -198,8 +198,8 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 		float scaleAmount = dir.Length() / borderSize;
 		dir.Normalize();
 
-		//FRotator rot = FRotator(dir.Rotation());
-		FRotator rot = FRotator(dir.RotateAngleAxis(90 * FVector::DotProduct(GetActorRightVector(), streetDir), FVector::UpVector).Rotation());
+		FRotator rot = FRotator(dir.Rotation());
+		//FRotator rot = FRotator(dir.RotateAngleAxis(90 * FVector::DotProduct(GetActorRightVector(), streetDir), FVector::UpVector).Rotation());
 
 
 		int sideVertsAmount = buildingVerts.Num();
