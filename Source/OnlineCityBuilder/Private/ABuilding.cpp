@@ -11,7 +11,7 @@ ABuilding::ABuilding()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	buildingMesh = CreateDefaultSubobject<UProceduralMeshComponent>("BuildingMesh");
-
+	RootComponent = buildingMesh;
 }
 
 // Called when the game starts or when spawned
@@ -140,24 +140,17 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 
 	TArray<FVector> wallCornerBuildArea = { vertices[0], vertices[1], vertices[2], vertices[3] };
 	BuildMesh(*(viewData->cornerMesh), wallCornerBuildArea, storeys, buildingVerts, buildingIndices, buildingNormals, 1);
-
-	TArray<FVector> windowsBuildArea = { vertices[0] + streetDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X),
-										 vertices[1] + (streetDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X) * -1),
-										 vertices[2] + (streetDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X) * -1),
-										 vertices[3] + streetDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X) };
-	//BuildMeshFilled(*(viewData->windowMesh), windowsBuildArea, buildingVerts, buildingIndices, buildingNormals);
+	BuildMesh(*(viewData->windowMesh), wallCornerBuildArea, storeys, buildingVerts, buildingIndices, buildingNormals, -1, true);
 
 	TArray<FVector> ceilingCornerBuildArea = { vertices[4], vertices[5], vertices[6], vertices[7] };
 	BuildMesh(*(viewData->ceilingCornerMesh), ceilingCornerBuildArea, 1, buildingVerts, buildingIndices, buildingNormals, 1);
-
-	TArray<FVector> ceilingBorderBuildArea = { vertices[4], vertices[5], vertices[6], vertices[7] };
-	//BuildMesh(*(viewData->ceilingBorderMesh), ceilingBorderBuildArea, 1, buildingVerts, buildingIndices, buildingNormals);
+	BuildMesh(*(viewData->ceilingBorderMesh), ceilingCornerBuildArea, 1, buildingVerts, buildingIndices, buildingNormals, -1, true);
 
 	TArray<FVector> ceilingFloorBuildArea = { 
-											  vertices[4] + streetDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X), 
-											  vertices[5] + (streetDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X) * -1), 
-											  vertices[6] + (streetDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X) * -1),
-											  vertices[7] + streetDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X) 
+											  vertices[4] + streetDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X) + buildingDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X) * -1,
+											  vertices[5] + (streetDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X) * -1 + buildingDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X) * -1),
+											  vertices[6] + (streetDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X) * -1 + buildingDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X)),
+											  vertices[7] + streetDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X) + buildingDir * (viewData->cornerMesh->GetBounds().GetBox().GetSize().X)
 											};
 	BuildMeshGrid(*(viewData->ceilingFloorMesh), ceilingFloorBuildArea, buildingVerts, buildingIndices, buildingNormals);
 
@@ -165,7 +158,7 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 	buildingMesh->SetMaterial(0, viewData->mat);
 }
 
-void ABuilding::BuildMesh(const UStaticMesh& mesh, TArray<FVector> buildArea, uint8 inStoreys, TArray<FVector>& currentBuildingVerts, TArray<int32>& currentBuildingIndices, TArray<FVector>& currentBuildingNormals, int amount)
+void ABuilding::BuildMesh(const UStaticMesh& mesh, TArray<FVector> buildArea, uint8 inStoreys, TArray<FVector>& currentBuildingVerts, TArray<int32>& currentBuildingIndices, TArray<FVector>& currentBuildingNormals, int amount, bool removeCorners)
 {
 	const FPositionVertexBuffer& meshVB = mesh.GetRenderData()->GetCurrentFirstLOD(0)->VertexBuffers.PositionVertexBuffer;
 	const FRawStaticIndexBuffer& meshIB = mesh.GetRenderData()->GetCurrentFirstLOD(0)->IndexBuffer;
@@ -195,11 +188,16 @@ void ABuilding::BuildMesh(const UStaticMesh& mesh, TArray<FVector> buildArea, ui
 			int sideVertsAmount = currentBuildingVerts.Num();
 
 			for (int16 j = 0; j < meshAmount; j++)
-			{
+			{			
+				if (removeCorners && (j == 0 || j == meshAmount - 1)) 
+				{
+					continue;
+				}
+
 				TArray<uint32> shiftedIndices;
 				for (int16 k = 0; k < meshIB.GetNumIndices(); k++)
 				{
-					shiftedIndices.Add(meshIB.GetIndex(k) + meshVB.GetNumVertices() * j + sideVertsAmount);
+					shiftedIndices.Add(meshIB.GetIndex(k) + meshVB.GetNumVertices() * (!removeCorners ? j : j - 1) + sideVertsAmount);
 				}
 				currentBuildingIndices.Append(shiftedIndices);
 
@@ -233,7 +231,7 @@ void ABuilding::BuildMeshGrid(const UStaticMesh& mesh, TArray<FVector> buildArea
 	rowDir.Normalize();
 	columnDir.Normalize();
 
-	for (int16 row = 1; row < rowAmount; row++)
+	for (int16 row = 0; row < rowAmount; row++)
 	{
 		float scaleAmountColumn = rowSize / (columnAmount * 100);
 		float scaleAmountRow = columnSize / (rowAmount * 100);
