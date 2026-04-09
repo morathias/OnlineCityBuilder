@@ -8,6 +8,7 @@
 #include "ABuilding.generated.h"
 
 class UProceduralMeshComponent;
+class URealtimeMeshComponent;
 
 UCLASS()
 class ONLINECITYBUILDER_API ABuilding : public AActor
@@ -46,6 +47,7 @@ private:
 
 	TArray<FVector> vertices;
 	UProceduralMeshComponent* buildingMesh;
+	URealtimeMeshComponent* realtimeMesh;
 
 	UPROPERTY(EditAnywhere) UBuildingViewData* viewData;
 };

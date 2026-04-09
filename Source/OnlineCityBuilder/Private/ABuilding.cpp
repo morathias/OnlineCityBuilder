@@ -2,7 +2,8 @@
 
 #include <ProceduralMeshComponent.h>
 #include <DrawDebugHelpers.h>
-
+#include <RealtimeMeshComponent.h>
+#include <RealtimeMeshSimple.h>
 
 
 // Sets default values
@@ -10,8 +11,8 @@ ABuilding::ABuilding()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	buildingMesh = CreateDefaultSubobject<UProceduralMeshComponent>("BuildingMesh");
-	RootComponent = buildingMesh;
+	//buildingMesh = CreateDefaultSubobject<UProceduralMeshComponent>("BuildingMesh");
+	realtimeMesh = CreateDefaultSubobject<URealtimeMeshComponent>("BuildingMesh");
 }
 
 // Called when the game starts or when spawned
@@ -154,8 +155,21 @@ void ABuilding::CalculateMesh(TArray<FVector> area, FVector dimensions)
 											};
 	BuildMeshGrid(*(viewData->ceilingFloorMesh), ceilingFloorBuildArea, buildingVerts, buildingIndices, buildingNormals);
 
-	buildingMesh->CreateMeshSection(0, buildingVerts, buildingIndices, buildingNormals, TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
-	buildingMesh->SetMaterial(0, viewData->mat);
+	URealtimeMeshSimple* generatedMesh = realtimeMesh->InitializeRealtimeMesh<URealtimeMeshSimple>();
+	FRealtimeMeshSimpleMeshData LODMeshData;
+	LODMeshData.Positions = buildingVerts;
+	LODMeshData.Triangles = buildingIndices;
+	LODMeshData.Normals = buildingNormals;
+
+	FRealtimeMeshLODKey LODKey = FRealtimeMeshLODKey(0);
+	generatedMesh->CreateSectionGroup(FRealtimeMeshSectionGroupKey::CreateUnique(LODKey), LODMeshData);
+	generatedMesh->SetupMaterialSlot(0, "fafa", viewData->mat);
+
+	/*generatedMesh->CreateSection(FRealtimeMeshSectionKey::Create(FRealtimeMeshSectionGroupKey::CreateUnique(FRealtimeMeshLODKey::FRealtimeMeshLODKey(0))),
+																FRealtimeMeshSectionConfig::FRealtimeMeshSectionConfig(),*/
+
+	//buildingMesh->CreateMeshSection(0, buildingVerts, buildingIndices, buildingNormals, TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+	//buildingMesh->SetMaterial(0, viewData->mat);
 }
 
 void ABuilding::BuildMesh(const UStaticMesh& mesh, TArray<FVector> buildArea, uint8 inStoreys, TArray<FVector>& currentBuildingVerts, TArray<int32>& currentBuildingIndices, TArray<FVector>& currentBuildingNormals, int amount, bool removeCorners)
