@@ -13,11 +13,14 @@ public:
 	~LandPlot();
 
 	TArray<FVector*> GetLeftBorder();
+	TArray<FVector>& GetVertices();
+	FVector& GetCenter() { return center; }
 
 private:
 	void ConstructBuilding();
 
 	TArray<FVector> vertices;
+	FVector center;
 
 	ABuilding* building;
 };

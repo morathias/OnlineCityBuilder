@@ -1,6 +1,5 @@
 #include "ABuilding.h"
 
-#include <ProceduralMeshComponent.h>
 #include <DrawDebugHelpers.h>
 #include <RealtimeMeshComponent.h>
 #include <RealtimeMeshSimple.h>

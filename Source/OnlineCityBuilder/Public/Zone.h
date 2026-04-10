@@ -15,6 +15,7 @@ public:
 	void RecalculateVertices(TArray<FVector> newVertices, TArray<FVector> normals, int index);
 	TArray<FVector> GetVertices();
 	TArray<int> GetIndices();
+	const TArray<LandPlot*>& GetLandPlots();
 
 	float width = 2500;
 

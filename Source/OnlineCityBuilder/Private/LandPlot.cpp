@@ -53,5 +53,8 @@ void LandPlot::ConstructBuilding()
 
 		building = GWorld->SpawnActor<ABuilding>(gameMode->buildingTypes[0]);
 		building->StartBuilding(vertices);
+		center = building->GetActorLocation();
 	}
 }
+
+TArray<FVector>& LandPlot::GetVertices() { return vertices; }

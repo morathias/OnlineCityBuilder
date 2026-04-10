@@ -7,7 +7,7 @@
 #include "Zone.h"
 #include "ZoneBuilder.generated.h"
 
-class UProceduralMeshComponent;
+class URealtimeMeshComponent;
 
 UCLASS()
 class ONLINECITYBUILDER_API AZoneBuilder : public AActor
@@ -33,7 +33,7 @@ private:
 	UMaterialInterface* zoneMaterial;
 	TArray<Zone*> zones;
 
-	UProceduralMeshComponent* mesh;
+	URealtimeMeshComponent* mesh;
 	TArray<FVector> meshVertices;
 	TArray<int> meshIndices;
 };

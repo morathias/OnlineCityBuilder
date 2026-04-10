@@ -106,3 +106,8 @@ void Zone::GenerateLandPlots()
 		landPlots.Add(nextLandPlot);
 	}
 }
+
+const TArray<LandPlot*>& Zone::GetLandPlots() 
+{
+	return landPlots;
+}

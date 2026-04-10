@@ -7,7 +7,6 @@
 #include "BuildingViewData.h"
 #include "ABuilding.generated.h"
 
-class UProceduralMeshComponent;
 class URealtimeMeshComponent;
 
 UCLASS()
@@ -46,7 +45,6 @@ private:
 	OnBuildingConstructed onBuildingConstructed;
 
 	TArray<FVector> vertices;
-	UProceduralMeshComponent* buildingMesh;
 	URealtimeMeshComponent* realtimeMesh;
 
 	UPROPERTY(EditAnywhere) UBuildingViewData* viewData;
