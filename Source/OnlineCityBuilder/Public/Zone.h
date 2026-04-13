@@ -3,16 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "IZonable.h"
 
 class LandPlot;
 
 class ONLINECITYBUILDER_API Zone
 {
 public:
-	Zone(TArray<FVector> vertices, TArray<FVector> normals, int index);
+	Zone(TArray<FVector> vertices, TArray<FVector> normals, IZonable* owner);
 	~Zone();
 
-	void RecalculateVertices(TArray<FVector> newVertices, TArray<FVector> normals, int index);
+	void RecalculateVertices(TArray<FVector> newVertices, TArray<FVector> normals, bool updateLandPLotes = false);
 	TArray<FVector> GetVertices();
 	TArray<int> GetIndices();
 	const TArray<LandPlot*>& GetLandPlots();
@@ -22,11 +23,14 @@ public:
 
 private:
 	void GenerateLandPlots();
-	float AngleBetweenVectors(FVector Vec1, FVector Vec2);
+	void UpdateLandPlots();
 
+	float AngleBetweenVectors(FVector Vec1, FVector Vec2);
 
 	TArray<FVector> vertices;
 	TArray<int> indices;
 
 	TArray<LandPlot*> landPlots;
+
+	IZonable* owner;
 };

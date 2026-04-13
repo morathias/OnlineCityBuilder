@@ -9,6 +9,7 @@
 
 class AStreetBuilder;
 class AZoneBuilder;
+class IZonable;
 
 UCLASS()
 class ONLINECITYBUILDER_API AMyCamera : public APawn
@@ -35,7 +36,7 @@ protected:
 
 private:
 	void CalculateCurrentSpeed();
-	void GetStreetBordersForZone();
+	void GetStreetBordersForZone(IZonable* zoneObject);
 
 	UPROPERTY(EditAnywhere, Category = "Road Editing")
 	float rayLength = 10000;

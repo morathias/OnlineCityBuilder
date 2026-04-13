@@ -116,8 +116,14 @@ void AMyCamera::Rotate(FVector2D mouseDelta)
     SetActorRotation(targetRot);
 }
 
-void AMyCamera::GetStreetBordersForZone() 
+void AMyCamera::GetStreetBordersForZone(IZonable* zoneObject) 
 {
-    zoneBuilder->GenerateZone(streetBuilder->GetLeftBorder(), streetBuilder->GetLeftBorderNormals());
-    zoneBuilder->GenerateZone(streetBuilder->GetRightBorder(), streetBuilder->GetRightBorderNormals());
+    zoneBuilder->GenerateZone(zoneObject->GetLeftEdge(), zoneObject->GetLeftEdgeNormals(), zoneObject);
+    zoneBuilder->GenerateZone(zoneObject->GetRightEdge(), zoneObject->GetRightEdgeNormals(), zoneObject);
+
+    for (IZonable* neighbour : zoneObject->GetNeighbourZonables()) 
+    {
+        zoneBuilder->UpdateZone(neighbour->GetLeftEdge(), neighbour->GetLeftEdgeNormals(), neighbour->attachedZones[0]);
+        zoneBuilder->UpdateZone(neighbour->GetRightEdge(), neighbour->GetRightEdgeNormals(), neighbour->attachedZones[1]);
+    }
 }

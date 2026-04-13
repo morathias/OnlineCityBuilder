@@ -192,3 +192,8 @@ TArray<FVector> Street::GetLeftEdgeNormals()
 
 	return normals;
 }
+
+TArray<IZonable*> Street::GetNeighbourZonables() 
+{
+	return TArray<IZonable*>(connectedStreets);
+}

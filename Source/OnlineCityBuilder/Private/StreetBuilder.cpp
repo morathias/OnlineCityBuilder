@@ -154,11 +154,11 @@ void AStreetBuilder::FinishRoad()
 	MarkNodeAsDirty(currentStreet->startNode);
 	MarkNodeAsDirty(currentStreet->endNode);
 
-	currentStreet = nullptr;
-
 	CalculateMesh();
 
-	streetPlacedDelegate.ExecuteIfBound();
+	streetPlacedDelegate.ExecuteIfBound(currentStreet);
+
+	currentStreet = nullptr;
 }
 
 void AStreetBuilder::CancelRoad() 

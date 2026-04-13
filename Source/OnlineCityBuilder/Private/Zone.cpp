@@ -1,9 +1,13 @@
 #include "Zone.h"
 #include "LandPlot.h"
 
-Zone::Zone(TArray<FVector> vertices, TArray<FVector> normals, int index)
+Zone::Zone(TArray<FVector> vertices, TArray<FVector> normals, IZonable* owner)
 {
-	RecalculateVertices(vertices, normals, index);
+	this->owner = owner;
+
+	this->owner->attachedZones.Add(this);
+
+	RecalculateVertices(vertices, normals);
 	GenerateLandPlots();
 }
 
@@ -15,7 +19,7 @@ Zone::~Zone()
 	}
 }
 
-void Zone::RecalculateVertices(TArray<FVector> newVertices, TArray<FVector> normals, int index)
+void Zone::RecalculateVertices(TArray<FVector> newVertices, TArray<FVector> normals, bool updateLandPlots)
 {
 	vertices.Empty();
 	indices.Empty();
@@ -40,6 +44,11 @@ void Zone::RecalculateVertices(TArray<FVector> newVertices, TArray<FVector> norm
 		indices.Add(i - 1);
 		indices.Add(i - 2);
 		indices.Add(i);
+	}
+
+	if (updateLandPlots) 
+	{
+		UpdateLandPlots();
 	}
 }
 
@@ -74,12 +83,12 @@ float Zone::AngleBetweenVectors(FVector Vec1, FVector Vec2)
 
 void Zone::GenerateLandPlots() 
 {
-	int32 plots = FMath::RandRange(2, 6);
-	//int32 plots = 1;
+	//int32 plots = FMath::RandRange(2, 6);
+	int32 plots = 1;
 
-	TArray<FVector*> border;
-	border.Add(&vertices[0]);
-	border.Add(&vertices[1]);
+	TArray<FVector> leftBorder;
+	leftBorder.Add(vertices[0]);
+	leftBorder.Add(vertices[1]);
 
 	FVector dir = vertices[2] - vertices[0];
 	float zoneLength = dir.Length();
@@ -89,25 +98,90 @@ void Zone::GenerateLandPlots()
 	
 	FVector pathDir = dir * plotWidth;
 
-	LandPlot* landPlot = new LandPlot(border, pathDir);
+	FVector depthDir = dir.RotateAngleAxis(90, FVector::UpVector);
+
+	TArray<FVector> rightBorder;
+	rightBorder.Add(vertices[0] + pathDir);
+	rightBorder.Add(FMath::ClosestPointOnLine(vertices[1], vertices[3], rightBorder[0]));
+
+	LandPlot* landPlot = new LandPlot(leftBorder, rightBorder);
 
 	landPlots.Add(landPlot);
 
-	for (int32 i = 1; i < plots; i++)
+	for (int32 i = 1; i < plots - 1; i++)
 	{
-		TArray<FVector*> nextBorder;
+		TArray<FVector> nextBorder;
 		nextBorder.Append(landPlots[landPlots.Num() - 1]->GetLeftBorder());
 
-		//TODO: this should consider the zone's shape but is not implemented yet
-		FVector nextPathDir = pathDir;
+		TArray<FVector> nextRightBorder;
+		nextRightBorder.Add(nextBorder[0] + pathDir);
+		nextRightBorder.Add(nextBorder[1] + pathDir);
+
 		
-		LandPlot* nextLandPlot = new LandPlot(nextBorder, nextPathDir);
+		LandPlot* nextLandPlot = new LandPlot(nextBorder, nextRightBorder);
 
 		landPlots.Add(nextLandPlot);
 	}
+
+	if (plots <= 1) return;
+
+	TArray<FVector> lastLeftBorder;
+	lastLeftBorder.Append(landPlots[landPlots.Num() - 1]->GetLeftBorder());
+
+	TArray<FVector> lastBorder;
+	lastBorder.Add(vertices[2]);
+	lastBorder.Add(vertices[3]);
+
+	LandPlot* lastLandPlot = new LandPlot(lastLeftBorder, lastBorder);
+
+	landPlots.Add(lastLandPlot);
 }
 
 const TArray<LandPlot*>& Zone::GetLandPlots() 
 {
 	return landPlots;
+}
+
+void Zone::UpdateLandPlots() 
+{
+	TArray<FVector> leftBorder;
+	leftBorder.Add(vertices[0]);
+	leftBorder.Add(vertices[1]);
+
+	FVector dir = vertices[2] - vertices[0];
+	float zoneLength = dir.Length();
+	dir.Normalize();
+
+	float plotWidth = (float)(zoneLength / landPlots.Num());
+
+	FVector pathDir = dir * plotWidth;
+
+	TArray<FVector> rightBorder;
+	rightBorder.Add(vertices[0] + pathDir);
+	rightBorder.Add(FMath::ClosestPointOnLine(vertices[1], vertices[3], rightBorder[0]));
+
+	landPlots[0]->UpdateVertices(leftBorder, rightBorder);
+
+	for (int32 i = 1; i < landPlots.Num() - 1; i++)
+	{
+		TArray<FVector> nextBorder;
+		nextBorder.Append(landPlots[landPlots.Num() - 1]->GetLeftBorder());
+
+		TArray<FVector> nextRightBorder;
+		nextRightBorder.Add(nextBorder[0] + pathDir);
+		nextRightBorder.Add(nextBorder[1] + pathDir);
+
+		landPlots[i]->UpdateVertices(nextBorder, nextRightBorder);
+	}
+
+	if (landPlots.Num() <= 1) return;
+
+	TArray<FVector> lastLeftBorder;
+	lastLeftBorder.Append(landPlots[landPlots.Num() - 1]->GetLeftBorder());
+
+	TArray<FVector> lastBorder;
+	lastBorder.Add(vertices[2]);
+	lastBorder.Add(vertices[3]);
+
+	landPlots[landPlots.Num() - 1]->UpdateVertices(lastLeftBorder, lastBorder);
 }

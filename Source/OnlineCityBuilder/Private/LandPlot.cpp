@@ -6,20 +6,18 @@
 
 #include <Engine/World.h>
 
-LandPlot::LandPlot(TArray<FVector*> startingBorder, FVector pathDir)
+LandPlot::LandPlot(TArray<FVector> leftBorder, TArray<FVector> rightBorder)
 {
-	FVector extrudedVertex = *startingBorder[0] + pathDir;
-	FVector endExtrudedVertex = *startingBorder[1] + pathDir;
+	vertices.Add(leftBorder[0]);
+	vertices.Add(rightBorder[0]);
+	vertices.Add(leftBorder[1]);
+	vertices.Add(rightBorder[1]);
 
-	vertices.Add(*startingBorder[0]);
-	vertices.Add(extrudedVertex);
-	vertices.Add(*startingBorder[1]);
-	vertices.Add(endExtrudedVertex);
-
-	/*DrawDebugSphere(GWorld, vertices[0], 300, 4, FColor::Red, true);
+	DrawDebugSphere(GWorld, vertices[0], 300, 4, FColor::Red, true);
 	DrawDebugSphere(GWorld, vertices[1], 300, 4, FColor::Red, true);
 	DrawDebugSphere(GWorld, vertices[2], 300, 4, FColor::Red, true);
-	DrawDebugSphere(GWorld, vertices[3], 300, 4, FColor::Red, true);*/
+	DrawDebugSphere(GWorld, vertices[3], 300, 4, FColor::Red, true);
+	//DrawDebugSphere(GWorld, vertices[0], 300, 4, FColor::Black, false);
 
 	ConstructBuilding();
 }
@@ -29,12 +27,12 @@ LandPlot::~LandPlot()
 	delete building;
 }
 
-TArray<FVector*> LandPlot::GetLeftBorder() 
+TArray<FVector> LandPlot::GetLeftBorder() 
 {
-	TArray<FVector*> leftBorder;
+	TArray<FVector> leftBorder;
 
-	leftBorder.Add(&vertices[1]);
-	leftBorder.Add(&vertices[3]);
+	leftBorder.Add(vertices[1]);
+	leftBorder.Add(vertices[3]);
 
 	return leftBorder;
 }
@@ -58,3 +56,13 @@ void LandPlot::ConstructBuilding()
 }
 
 TArray<FVector>& LandPlot::GetVertices() { return vertices; }
+
+void LandPlot::UpdateVertices(TArray<FVector> leftBorder, TArray<FVector> rightBorder)
+{
+	vertices.Empty();
+
+	vertices.Add(leftBorder[0]);
+	vertices.Add(rightBorder[0]);
+	vertices.Add(leftBorder[1]);
+	vertices.Add(rightBorder[1]);
+}

@@ -9,12 +9,14 @@ class ABuilding;
 class ONLINECITYBUILDER_API LandPlot
 {
 public:
-	LandPlot(TArray<FVector*> startingBorder, FVector pathDir);
+	LandPlot(TArray<FVector> leftBorder, TArray<FVector> rightBorder);
 	~LandPlot();
 
-	TArray<FVector*> GetLeftBorder();
+	TArray<FVector> GetLeftBorder();
 	TArray<FVector>& GetVertices();
 	FVector& GetCenter() { return center; }
+
+	void UpdateVertices(TArray<FVector> leftBorder, TArray<FVector> rightBorder);
 
 private:
 	void ConstructBuilding();

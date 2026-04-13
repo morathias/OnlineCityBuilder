@@ -11,20 +11,21 @@ AZoneBuilder::AZoneBuilder()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	mesh = CreateDefaultSubobject<URealtimeMeshComponent>("ZonesMesh");
+	SetRootComponent(mesh);
+
 }
 
 // Called when the game starts or when spawned
 void AZoneBuilder::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	generatedMesh = mesh->InitializeRealtimeMesh<URealtimeMeshSimple>();
 }
 
 // Called every frame
 void AZoneBuilder::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void AZoneBuilder::SetMaterial(UMaterialInterface* mat) 
@@ -33,10 +34,17 @@ void AZoneBuilder::SetMaterial(UMaterialInterface* mat)
 	mesh->SetMaterial(0, zoneMaterial);
 }
 
-void AZoneBuilder::GenerateZone(TArray<FVector> vertices, TArray<FVector> normals) 
+void AZoneBuilder::GenerateZone(TArray<FVector> vertices, TArray<FVector> normals, IZonable* owner) 
 {
-	Zone* newZone = new Zone(vertices, normals, zones.Num() + 1);
+	Zone* newZone = new Zone(vertices, normals, owner);
 	zones.Add(newZone);
+
+	CalculateMesh();
+}
+
+void AZoneBuilder::UpdateZone(TArray<FVector> vertices, TArray<FVector> normals, Zone* zoneToUpdate)
+{
+	zoneToUpdate->RecalculateVertices(vertices, normals, true);
 
 	CalculateMesh();
 }
@@ -62,15 +70,20 @@ void AZoneBuilder::CalculateMesh()
 		}
 	}
 
-	URealtimeMeshSimple* generatedMesh = mesh->InitializeRealtimeMesh<URealtimeMeshSimple>();
 	FRealtimeMeshSimpleMeshData LODMeshData;
 	LODMeshData.Positions = meshVertices;
 	LODMeshData.Triangles = meshIndices;
 	LODMeshData.Colors = meshColors;
 
+	FRealtimeMeshSectionGroupKey groupKey = FRealtimeMeshSectionGroupKey::Create(FRealtimeMeshLODKey(0), "Zones");
 
-	FRealtimeMeshLODKey LODKey = FRealtimeMeshLODKey(0);
-	generatedMesh->CreateSectionGroup(FRealtimeMeshSectionGroupKey::CreateUnique(LODKey), LODMeshData);
+	if (generatedMesh->GetSectionGroup(groupKey) != nullptr)
+	{
+		generatedMesh->UpdateSectionGroup(groupKey, LODMeshData);
+		return;
+	}
+
+	generatedMesh->CreateSectionGroup(groupKey, LODMeshData);
 }
 
 

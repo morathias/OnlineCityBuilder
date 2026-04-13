@@ -8,6 +8,7 @@
 #include "ZoneBuilder.generated.h"
 
 class URealtimeMeshComponent;
+class URealtimeMeshSimple;
 
 UCLASS()
 class ONLINECITYBUILDER_API AZoneBuilder : public AActor
@@ -21,7 +22,8 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	void SetMaterial(UMaterialInterface* mat);
-	void GenerateZone(TArray<FVector> vertices, TArray<FVector> normals);
+	void GenerateZone(TArray<FVector> vertices, TArray<FVector> normals, IZonable* owner);
+	void UpdateZone(TArray<FVector> vertices, TArray<FVector> normals, Zone* zoneToUpdate);
 
 protected:
 	// Called when the game starts or when spawned
@@ -34,6 +36,7 @@ private:
 	TArray<Zone*> zones;
 
 	URealtimeMeshComponent* mesh;
+	URealtimeMeshSimple* generatedMesh;
 	TArray<FVector> meshVertices;
 	TArray<int> meshIndices;
 };

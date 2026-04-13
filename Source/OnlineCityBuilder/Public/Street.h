@@ -3,10 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "IZonable.h"
 
 enum StreetType;
 
-class ONLINECITYBUILDER_API Street
+class ONLINECITYBUILDER_API Street : public IZonable
 {
 public:
 	struct Node
@@ -37,12 +38,13 @@ public:
 	TArray<FVector*> GetVerticesForNode(const Node* node);
 	TArray<int> GetIndecesForNode(const Node* node);
 
-	TArray<FVector> GetRightEdge();
-	TArray<FVector> GetRightEdgeNormals();
+	virtual TArray<FVector> GetRightEdge() override;
+	virtual TArray<FVector> GetRightEdgeNormals() override;
 
-	TArray<FVector> GetLeftEdge();
-	TArray<FVector> GetLeftEdgeNormals();
+	virtual TArray<FVector> GetLeftEdge() override;
+	virtual TArray<FVector> GetLeftEdgeNormals() override;
 
+	TArray<IZonable*> GetNeighbourZonables() override;
 
 	float width = 1000;
 

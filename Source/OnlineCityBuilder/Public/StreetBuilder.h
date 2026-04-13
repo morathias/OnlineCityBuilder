@@ -35,8 +35,8 @@ public:
 
 	void SetMaterial(UMaterialInterface* material);
 
-	DECLARE_DELEGATE(StreetPlaced);
-
+	DECLARE_DELEGATE_OneParam(StreetPlaced, IZonable*);
+	
 	StreetPlaced streetPlacedDelegate;
 
 protected:
