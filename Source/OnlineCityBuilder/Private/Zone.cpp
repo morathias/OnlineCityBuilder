@@ -26,13 +26,28 @@ void Zone::RecalculateVertices(TArray<FVector> newVertices, TArray<FVector> norm
 
 	for (int i = 1; i < newVertices.Num(); i++)
 	{
-		FVector extrudedVertex = newVertices[i - 1] + normals[i - 1] * width;
-		this->vertices.AddUnique(newVertices[i - 1]);
-		this->vertices.AddUnique(extrudedVertex);
+		FVector lineSegment = newVertices[i - 1] + normals[i - 1] * 9999;
+		FVector extrudedVertex = FVector::ZeroVector;
 
-		FVector nextExtrudedVertex = newVertices[i] + normals[i] * width;
-		this->vertices.AddUnique(newVertices[i]);
-		this->vertices.AddUnique(nextExtrudedVertex);
+		FVector borderTangent = newVertices[i] - newVertices[i - 1];
+		borderTangent.Normalize();
+		borderTangent *= width;
+		borderTangent = borderTangent.RotateAngleAxis(90, FVector::UpVector);
+
+		FMath::SegmentIntersection2D(newVertices[i - 1], lineSegment, 
+									 newVertices[i - 1] + borderTangent + (newVertices[i - 1] - newVertices[i]) * 100, newVertices[i - 1] + borderTangent + (newVertices[i] - newVertices[i - 1]) * 100,
+									 extrudedVertex);
+
+		this->vertices.Add(newVertices[i - 1]);
+		this->vertices.Add(extrudedVertex);
+
+		FVector newLineSegment = newVertices[i] + normals[i] * 9999;
+		FVector nextExtrudedVertex = FVector::ZeroVector;
+		FMath::SegmentIntersection2D(newVertices[i], newLineSegment, 
+									 newVertices[i] + borderTangent + (newVertices[i - 1] - newVertices[i]), newVertices[i] + borderTangent + (newVertices[i] - newVertices[i - 1]), nextExtrudedVertex);
+
+		this->vertices.Add(newVertices[i]);
+		this->vertices.Add(nextExtrudedVertex);
 	}
 
 	for (int i = 3; i < vertices.Num(); i += 2)
