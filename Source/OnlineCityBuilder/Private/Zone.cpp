@@ -98,11 +98,10 @@ void Zone::GenerateLandPlots()
 	
 	FVector pathDir = dir * plotWidth;
 
-	FVector depthDir = dir.RotateAngleAxis(90, FVector::UpVector);
-
 	TArray<FVector> rightBorder;
 	rightBorder.Add(vertices[0] + pathDir);
-	rightBorder.Add(FMath::ClosestPointOnLine(vertices[1], vertices[3], rightBorder[0]));
+	rightBorder.Add(rightBorder[0] + (vertices[3] - vertices[2]));
+
 
 	LandPlot* landPlot = new LandPlot(leftBorder, rightBorder);
 
@@ -158,7 +157,7 @@ void Zone::UpdateLandPlots()
 
 	TArray<FVector> rightBorder;
 	rightBorder.Add(vertices[0] + pathDir);
-	rightBorder.Add(FMath::ClosestPointOnLine(vertices[1], vertices[3], rightBorder[0]));
+	rightBorder.Add(rightBorder[0] + (vertices[3] - vertices[2]));
 
 	landPlots[0]->UpdateVertices(leftBorder, rightBorder);
 

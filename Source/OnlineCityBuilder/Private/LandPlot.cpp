@@ -13,10 +13,10 @@ LandPlot::LandPlot(TArray<FVector> leftBorder, TArray<FVector> rightBorder)
 	vertices.Add(leftBorder[1]);
 	vertices.Add(rightBorder[1]);
 
-	DrawDebugSphere(GWorld, vertices[0], 300, 4, FColor::Red, true);
+	/*DrawDebugSphere(GWorld, vertices[0], 300, 4, FColor::Red, true);
 	DrawDebugSphere(GWorld, vertices[1], 300, 4, FColor::Red, true);
 	DrawDebugSphere(GWorld, vertices[2], 300, 4, FColor::Red, true);
-	DrawDebugSphere(GWorld, vertices[3], 300, 4, FColor::Red, true);
+	DrawDebugSphere(GWorld, vertices[3], 300, 4, FColor::Red, true);*/
 	//DrawDebugSphere(GWorld, vertices[0], 300, 4, FColor::Black, false);
 
 	ConstructBuilding();
@@ -31,8 +31,8 @@ TArray<FVector> LandPlot::GetLeftBorder()
 {
 	TArray<FVector> leftBorder;
 
-	leftBorder.Add(vertices[1]);
-	leftBorder.Add(vertices[3]);
+	leftBorder.Add(vertices[0]);
+	leftBorder.Add(vertices[2]);
 
 	return leftBorder;
 }

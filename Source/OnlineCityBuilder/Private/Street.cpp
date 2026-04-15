@@ -181,10 +181,10 @@ TArray<FVector> Street::GetLeftEdgeNormals()
 {
 	TArray<FVector> normals;
 
-	FVector startNormal = vertices[0] - (startNode->position + FVector::UpVector * vertices[0].Z);
+	FVector startNormal = vertices[2] - (vertices[3]);
 	startNormal.Normalize();
 
-	FVector endNormal = vertices[2] - (endNode->position + FVector::UpVector * vertices[2].Z);
+	FVector endNormal = vertices[0] - (vertices[1]);
 	endNormal.Normalize();
 
 	normals.Add(startNormal);
