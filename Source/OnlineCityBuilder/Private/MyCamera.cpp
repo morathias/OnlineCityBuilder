@@ -123,7 +123,15 @@ void AMyCamera::GetStreetBordersForZone(IZonable* zoneObject)
 
     for (IZonable* neighbour : zoneObject->GetNeighbourZonables()) 
     {
-        zoneBuilder->UpdateZone(neighbour->GetLeftEdge(), neighbour->GetLeftEdgeNormals(), neighbour->attachedZones[0]);
-        zoneBuilder->UpdateZone(neighbour->GetRightEdge(), neighbour->GetRightEdgeNormals(), neighbour->attachedZones[1]);
+        if (neighbour->attachedZones.Num() > 0)
+        {
+            zoneBuilder->UpdateZone(neighbour->GetLeftEdge(), neighbour->GetLeftEdgeNormals(), neighbour->attachedZones[0]);
+            zoneBuilder->UpdateZone(neighbour->GetRightEdge(), neighbour->GetRightEdgeNormals(), neighbour->attachedZones[1]);
+        }
+        else 
+        {
+            zoneBuilder->GenerateZone(neighbour->GetLeftEdge(), neighbour->GetLeftEdgeNormals(), neighbour);
+            zoneBuilder->GenerateZone(neighbour->GetRightEdge(), neighbour->GetRightEdgeNormals(), neighbour);
+        }
     }
 }

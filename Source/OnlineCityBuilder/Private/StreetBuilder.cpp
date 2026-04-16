@@ -562,8 +562,6 @@ void AStreetBuilder::SplitStreet(Street* streetToSplit, Street::Node* splitNode)
 {
 	Street::Node* oldEndNode = streetToSplit->endNode;
 
-	UE_LOG(LogTemp, Warning, TEXT("intersecting street: %i"), streets.IndexOfByKey(streetToSplit));
-
 	Street* newStreet = new Street(oldEndNode, splitNode);
 	newStreet->ConnectStreet(streetToSplit);
 	newStreet->ConnectStreet(currentStreet);
