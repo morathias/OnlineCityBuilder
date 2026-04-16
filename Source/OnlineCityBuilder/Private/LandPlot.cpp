@@ -31,8 +31,8 @@ TArray<FVector> LandPlot::GetLeftBorder()
 {
 	TArray<FVector> leftBorder;
 
-	leftBorder.Add(vertices[0]);
-	leftBorder.Add(vertices[2]);
+	leftBorder.Add(vertices[1]);
+	leftBorder.Add(vertices[3]);
 
 	return leftBorder;
 }

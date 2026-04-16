@@ -98,8 +98,8 @@ float Zone::AngleBetweenVectors(FVector Vec1, FVector Vec2)
 
 void Zone::GenerateLandPlots() 
 {
-	//int32 plots = FMath::RandRange(2, 6);
-	int32 plots = 1;
+	int32 plots = FMath::RandRange(2, 6);
+	//int32 plots = 1;
 
 	TArray<FVector> leftBorder;
 	leftBorder.Add(vertices[0]);
@@ -115,7 +115,7 @@ void Zone::GenerateLandPlots()
 
 	TArray<FVector> rightBorder;
 	rightBorder.Add(vertices[0] + pathDir);
-	rightBorder.Add(rightBorder[0] + (vertices[3] - vertices[2]));
+	rightBorder.Add(rightBorder[0] + dir.RotateAngleAxis(90, FVector::UpVector) * width);
 
 
 	LandPlot* landPlot = new LandPlot(leftBorder, rightBorder);
@@ -130,7 +130,6 @@ void Zone::GenerateLandPlots()
 		TArray<FVector> nextRightBorder;
 		nextRightBorder.Add(nextBorder[0] + pathDir);
 		nextRightBorder.Add(nextBorder[1] + pathDir);
-
 		
 		LandPlot* nextLandPlot = new LandPlot(nextBorder, nextRightBorder);
 
@@ -172,14 +171,14 @@ void Zone::UpdateLandPlots()
 
 	TArray<FVector> rightBorder;
 	rightBorder.Add(vertices[0] + pathDir);
-	rightBorder.Add(rightBorder[0] + (vertices[3] - vertices[2]));
+	rightBorder.Add(rightBorder[0] + dir.RotateAngleAxis(90, FVector::UpVector) * width);
 
 	landPlots[0]->UpdateVertices(leftBorder, rightBorder);
 
 	for (int32 i = 1; i < landPlots.Num() - 1; i++)
 	{
 		TArray<FVector> nextBorder;
-		nextBorder.Append(landPlots[landPlots.Num() - 1]->GetLeftBorder());
+		nextBorder.Append(landPlots[i - 1]->GetLeftBorder());
 
 		TArray<FVector> nextRightBorder;
 		nextRightBorder.Add(nextBorder[0] + pathDir);
@@ -191,7 +190,7 @@ void Zone::UpdateLandPlots()
 	if (landPlots.Num() <= 1) return;
 
 	TArray<FVector> lastLeftBorder;
-	lastLeftBorder.Append(landPlots[landPlots.Num() - 1]->GetLeftBorder());
+	lastLeftBorder.Append(landPlots[landPlots.Num() - 2]->GetLeftBorder());
 
 	TArray<FVector> lastBorder;
 	lastBorder.Add(vertices[2]);
