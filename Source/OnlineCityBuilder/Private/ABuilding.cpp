@@ -185,10 +185,15 @@ void ABuilding::BuildMesh(const UStaticMesh& mesh, TArray<FVector> buildArea, ui
 				for (uint32 k = 0; k < meshVB.GetNumVertices(); k++)
 				{
 					FVector localMeshVert = (FVector)meshVB.VertexPosition(k);
-
+					FVector normals = transform.TransformVector((FVector)meshSVB.VertexTangentZ(k));
+					normals.Normalize();
+					FVector tangents = transform.TransformVector((FVector)meshSVB.VertexTangentX(k));
+					tangents.Normalize();
 					builder.AddVertex(FVector3f(transform.TransformPosition(localMeshVert)))
-						.SetNormal(FVector3f(transform.TransformVector((FVector)meshSVB.VertexTangentZ(k))))
+						.SetNormal(FVector3f(normals))
+						.SetTangent(FVector3f(tangents))
 						.SetTexCoord(0, meshSVB.GetVertexUV(k, 0));
+
 					//DrawDebugSphere(GetWorld(), transform.TransformPosition(localMeshVert) + GetActorLocation(), 10, 4, FColor::Blue, true);
 					//DrawDebugString(GetWorld(), transform.TransformPosition(localMeshVert) + GetActorLocation(), TEXT(""+ FString::FromInt(buildingVerts.Num() + k)), (AActor*)0, FColor::Black);
 				}
